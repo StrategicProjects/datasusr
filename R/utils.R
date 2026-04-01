@@ -1,7 +1,15 @@
 
-#' @importFrom rlang %||%
+#' @importFrom rlang %||% .env
 #' @keywords internal
 NULL
+
+# Column names used in dplyr pipelines (suppress R CMD check NOTEs)
+utils::globalVariables(c(
+  "accessed_time", "availability", "description", "dest_file", "entry",
+  "exists", "file_name", "file_type", "frequency", "ftp_url",
+  "modality_code", "modified_time", "path", "period", "reason",
+  "scope", "source_dir", "token", "was_cached"
+))
 
 #' Format byte sizes for display
 #'
