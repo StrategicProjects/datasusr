@@ -1,0 +1,12 @@
+This package bundles third-party source files:
+
+- src/blast.c
+- src/blast.h
+
+These files are from zlib contrib/blast and are authored by Mark Adler.
+They are distributed under the zlib license.
+
+The bundled blast code is used to decompress PKWare Data Compression Library
+(DCL) streams, which are used by DATASUS DBC files.
+
+See the original notices preserved in the bundled source files.

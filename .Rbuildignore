@@ -1,0 +1,13 @@
+^.*\.Rproj$
+^\.Rproj\.user$
+^\.DS_Store$
+^\.Rhistory$
+^cran-comments\.md$
+^_pkgdown\.yml$
+^docs$
+^pkgdown$
+^\.github$
+^LICENSE\.md$
+^src/.*\.o$
+^src/.*\.so$
+^src/.*\.dll$

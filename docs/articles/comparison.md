@@ -1,0 +1,167 @@
+# Comparison with read.dbc and microdatasus
+
+Several R packages provide access to DATASUS data. This article compares
+`datasusr` with the two most established alternatives — `read.dbc` and
+`microdatasus` — to help you choose the right tool for your workflow.
+
+## Overview
+
+| Feature | datasusr | read.dbc | microdatasus |
+|----|----|----|----|
+| Read DBC files | In-memory C parser | Temp DBF + [`foreign::read.dbf`](https://rdrr.io/pkg/foreign/man/read.dbf.html) | Via `read.dbc` dependency |
+| Column selection at read time | Yes (`select`) | No | Yes (`vars`) |
+| Type control (`col_types`, `guess_types`) | Yes | No | No |
+| Date parsing at read time | Yes (`parse_dates`) | No | Via `process_*()` post-hoc |
+| Column names in snake_case | Yes (`clean_names`) | No (uppercase) | No (uppercase) |
+| Returns tibble | Always | `data.frame` | `tibble` (after processing) |
+| FTP catalog / discovery | Yes (18 sources) | No | Yes (`fetch_datasus()`) |
+| Download with caching | Yes (persistent, configurable) | No | Yes (session-level) |
+| Parallel downloads with progress | Yes ([`curl::multi_download`](https://jeroen.r-universe.dev/curl/reference/multi_download.html)) | No | No |
+| Variable labelling / recoding | No | No | Yes (`process_*()` functions) |
+| One-step fetch + read | Yes ([`datasus_fetch()`](https://strategicprojects.github.io/datasusr/reference/datasus_fetch.md)) | No | Yes (`fetch_datasus()`) |
+| CRAN status | GitHub | Archived | Archived (dep on `read.dbc`) |
+| License | MIT | AGPL-3 | MIT |
+
+## DBC reading: architecture
+
+The three packages take fundamentally different approaches to reading
+`.dbc` files:
+
+**read.dbc** decompresses the `.dbc` to a temporary `.dbf` on disk using
+C code (`dbc2dbf`), then calls
+[`foreign::read.dbf()`](https://rdrr.io/pkg/foreign/man/read.dbf.html)
+to parse it. This two-step process is reliable but involves disk I/O for
+the intermediate file and inherits the type limitations of
+[`foreign::read.dbf()`](https://rdrr.io/pkg/foreign/man/read.dbf.html)
+(all numeric fields become `double`; no column selection).
+
+**microdatasus** depends on `read.dbc` for the file reading step. Its
+main value is in the `fetch_datasus()` download function and the
+`process_*()` family, which recode categorical variables (e.g. replacing
+municipality codes with names, labelling sex, age groups, etc.). It also
+supports column selection via the `vars` parameter.
+
+**datasusr** performs decompression and DBF parsing entirely in memory
+in a single C call. The compressed payload is decompressed with `blast`
+(the same algorithm used by `read.dbc`) directly into a memory buffer,
+then parsed field-by-field into pre-allocated R vectors. This avoids
+temporary files and enables features like column selection (`select`),
+type inference (`guess_types`), explicit type control (`col_types`), and
+date parsing (`parse_dates`) at the C level.
+
+## Download and catalog features
+
+Both `datasusr` and `microdatasus` provide functions to discover and
+download files from the DATASUS FTP. They differ in design:
+
+**microdatasus** exposes a single `fetch_datasus()` function that takes
+high-level parameters (`year_start`, `year_end`, `uf`,
+`information_system`) and handles path construction internally. It
+downloads, reads, and binds files in one call. This is convenient but
+offers limited control over which specific files are retrieved.
+
+**datasusr** offers a layered API:
+[`datasus_sources()`](https://strategicprojects.github.io/datasusr/reference/datasus_sources.md)
+and
+[`datasus_file_types()`](https://strategicprojects.github.io/datasusr/reference/datasus_file_types.md)
+let you browse the catalog,
+[`datasus_list_files()`](https://strategicprojects.github.io/datasusr/reference/datasus_list_files.md)
+generates and validates file lists,
+[`datasus_download()`](https://strategicprojects.github.io/datasusr/reference/datasus_download.md)
+handles downloading with caching, and
+[`datasus_fetch()`](https://strategicprojects.github.io/datasusr/reference/datasus_fetch.md)
+wraps them all for one-step convenience. This design lets you inspect
+and customise each step.
+
+Both packages support caching of downloaded files. `datasusr` provides a
+persistent, configurable cache with explicit management functions
+([`datasus_cache_info()`](https://strategicprojects.github.io/datasusr/reference/datasus_cache_info.md),
+[`datasus_cache_prune()`](https://strategicprojects.github.io/datasusr/reference/datasus_cache_prune.md),
+[`datasus_cache_clear()`](https://strategicprojects.github.io/datasusr/reference/datasus_cache_clear.md))
+and supports configuration via environment variable, R option, or
+function argument.
+
+## Variable labelling
+
+One area where `microdatasus` stands out is **post-processing**. Its
+`process_sim()`, `process_sinasc()`, `process_sih()`, `process_sia()`,
+and `process_cnes()` functions decode categorical fields: they replace
+numeric codes with human-readable labels for variables like sex, race,
+municipality, cause of death (ICD-10), and procedures. This saves
+considerable manual work when building descriptive analyses.
+
+`datasusr` does not currently provide variable labelling. It focuses on
+fast, flexible I/O and leaves the semantic interpretation to the
+analyst. If you need labelled variables, you can apply your own lookup
+tables on the tibble returned by `datasusr`.
+
+## CRAN availability
+
+As of this writing, both `read.dbc` and `microdatasus` have been
+archived from CRAN. `microdatasus` was archived due to its dependency on
+`read.dbc`. Both remain installable from GitHub. `datasusr` is available
+on GitHub and has no dependency on either package.
+
+## When to use which
+
+Use **`datasusr`** when you need fast, flexible reads of `.dbc` files —
+for example, reading specific columns from large files, controlling
+types, or building reproducible pipelines with persistent caching. It
+works well as a standalone package for data engineering tasks and
+integrates naturally with the tidyverse.
+
+Use **`microdatasus`** when you want labelled, analysis-ready data
+frames with minimal code. The `process_*()` functions are a significant
+time-saver for exploratory epidemiological analyses.
+
+Use **`read.dbc`** when you just need to read a `.dbc` file into a data
+frame and don’t need column selection, type control, or download
+helpers.
+
+## Code comparison
+
+Reading a single DBC file with each package:
+
+``` r
+
+# --- datasusr -----------------------------------------------------------------
+library(datasusr)
+x <- read_datasus_dbc(
+  "RDPE2401.dbc",
+  select = c("uf_zi", "ano_cmpt", "val_tot"),
+  col_types = c(val_tot = "double")
+)
+
+# --- read.dbc -----------------------------------------------------------------
+library(read.dbc)
+x <- read.dbc("RDPE2401.dbc")        # returns full data.frame, all columns uppercase
+x <- x[, c("UF_ZI", "ANO_CMPT", "VAL_TOT")]
+
+# --- microdatasus -------------------------------------------------------------
+library(microdatasus)
+x <- fetch_datasus(
+  year_start = 2024, year_end = 2024,
+  month_start = 1, month_end = 1,
+  uf = "PE", information_system = "SIH-RD"
+)
+x <- process_sih(x)
+```
+
+Downloading and reading a full year:
+
+``` r
+
+# --- datasusr -----------------------------------------------------------------
+df <- datasus_fetch(
+  source = "SIHSUS", file_type = "RD",
+  year = 2024, month = 1:12, uf = "PE",
+  select = c("uf_zi", "ano_cmpt", "val_tot")
+)
+
+# --- microdatasus -------------------------------------------------------------
+df <- fetch_datasus(
+  year_start = 2024, year_end = 2024,
+  uf = "PE", information_system = "SIH-RD"
+)
+df <- process_sih(df)
+```

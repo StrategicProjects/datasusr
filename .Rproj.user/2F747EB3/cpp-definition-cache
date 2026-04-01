@@ -1,0 +1,523 @@
+[
+    {
+        "file": "/Users/leite/Github/datasusr/src/blast.c",
+        "file_last_write": 1775001346.0,
+        "definitions": [
+            {
+                "usr": "c:blast.c@1461@macro@local",
+                "kind": 9,
+                "parent_name": "",
+                "name": "local",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 36,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@1530@macro@MAXBITS",
+                "kind": 9,
+                "parent_name": "",
+                "name": "MAXBITS",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 37,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@1588@macro@MAXWIN",
+                "kind": 9,
+                "parent_name": "",
+                "name": "MAXWIN",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 38,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@state",
+                "kind": 3,
+                "parent_name": "",
+                "name": "state",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 41,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@F@bits",
+                "kind": 6,
+                "parent_name": "",
+                "name": "bits(struct state *, int)",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 72,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@S@huffman",
+                "kind": 3,
+                "parent_name": "",
+                "name": "huffman",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 103,
+                "column": 8,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@F@decode",
+                "kind": 6,
+                "parent_name": "",
+                "name": "decode(struct state *, struct huffman *)",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 129,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@F@construct",
+                "kind": 6,
+                "parent_name": "",
+                "name": "construct(struct huffman *, const unsigned char *, int)",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 191,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.c@F@decomp",
+                "kind": 6,
+                "parent_name": "",
+                "name": "decomp(struct state *)",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 282,
+                "column": 11,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@blast",
+                "kind": 6,
+                "parent_name": "",
+                "name": "blast(blast_in, void *, blast_out, void *, unsigned int *, unsigned char **)",
+                "file": "/Users/leite/Github/datasusr/src/blast.c",
+                "line": 383,
+                "column": 5,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/leite/Github/datasusr/src/blast.h",
+        "file_last_write": 1775001346.0,
+        "definitions": [
+            {
+                "usr": "c:blast.h@T@blast_in",
+                "kind": 8,
+                "parent_name": "",
+                "name": "blast_in",
+                "file": "/Users/leite/Github/datasusr/src/blast.h",
+                "line": 38,
+                "column": 20,
+                "hidden": false
+            },
+            {
+                "usr": "c:blast.h@T@blast_out",
+                "kind": 8,
+                "parent_name": "",
+                "name": "blast_out",
+                "file": "/Users/leite/Github/datasusr/src/blast.h",
+                "line": 39,
+                "column": 15,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+        "file_last_write": 1775007896.0,
+        "definitions": [
+            {
+                "usr": "c:dbc_reader.c@197@macro@CRC_OFFSET",
+                "kind": 9,
+                "parent_name": "",
+                "name": "CRC_OFFSET",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 13,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@SA@blast_input_t",
+                "kind": 3,
+                "parent_name": "",
+                "name": "blast_input_t",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 15,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@T@blast_input_t",
+                "kind": 8,
+                "parent_name": "",
+                "name": "blast_input_t",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 19,
+                "column": 3,
+                "hidden": false
+            },
+            {
+                "usr": "c:@SA@blast_output_t",
+                "kind": 3,
+                "parent_name": "",
+                "name": "blast_output_t",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 21,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@T@blast_output_t",
+                "kind": 8,
+                "parent_name": "",
+                "name": "blast_output_t",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 25,
+                "column": 3,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@le_u16",
+                "kind": 6,
+                "parent_name": "",
+                "name": "le_u16(const unsigned char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 27,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@le_u32",
+                "kind": 6,
+                "parent_name": "",
+                "name": "le_u32(const unsigned char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 31,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@blast_in_callback",
+                "kind": 6,
+                "parent_name": "",
+                "name": "blast_in_callback(void *, unsigned char **)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 38,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@blast_out_callback",
+                "kind": 6,
+                "parent_name": "",
+                "name": "blast_out_callback(void *, unsigned char *, unsigned int)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 55,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@free_output",
+                "kind": 6,
+                "parent_name": "",
+                "name": "free_output(blast_output_t *)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 86,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@read_file_bin",
+                "kind": 6,
+                "parent_name": "",
+                "name": "read_file_bin(const char *, size_t *)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 96,
+                "column": 23,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@looks_like_dbf_header",
+                "kind": 6,
+                "parent_name": "",
+                "name": "looks_like_dbf_header(const unsigned char *, size_t)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 133,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@looks_like_complete_dbf",
+                "kind": 6,
+                "parent_name": "",
+                "name": "looks_like_complete_dbf(const unsigned char *, size_t)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 169,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbc_reader.c@F@blast_from_memory",
+                "kind": 6,
+                "parent_name": "",
+                "name": "blast_from_memory(const unsigned char *, size_t, blast_output_t *)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 183,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@c_read_datasus_dbc",
+                "kind": 6,
+                "parent_name": "",
+                "name": "c_read_datasus_dbc(SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP, SEXP)",
+                "file": "/Users/leite/Github/datasusr/src/dbc_reader.c",
+                "line": 200,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+        "file_last_write": 1775001346.0,
+        "definitions": [
+            {
+                "usr": "c:@EA@col_target_t",
+                "kind": 4,
+                "parent_name": "",
+                "name": "col_target_t",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 13,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@T@col_target_t",
+                "kind": 8,
+                "parent_name": "",
+                "name": "col_target_t",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 20,
+                "column": 3,
+                "hidden": false
+            },
+            {
+                "usr": "c:@SA@field_info_t",
+                "kind": 3,
+                "parent_name": "",
+                "name": "field_info_t",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 22,
+                "column": 9,
+                "hidden": false
+            },
+            {
+                "usr": "c:@T@field_info_t",
+                "kind": 8,
+                "parent_name": "",
+                "name": "field_info_t",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 30,
+                "column": 3,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@le_u16",
+                "kind": 6,
+                "parent_name": "",
+                "name": "le_u16(const unsigned char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 32,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@le_u32",
+                "kind": 6,
+                "parent_name": "",
+                "name": "le_u32(const unsigned char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 36,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@match_select",
+                "kind": 6,
+                "parent_name": "",
+                "name": "match_select(SEXP, const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 43,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@trim_bounds",
+                "kind": 6,
+                "parent_name": "",
+                "name": "trim_bounds(const unsigned char *, int, int, int *, int *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 57,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@copy_trimmed",
+                "kind": 6,
+                "parent_name": "",
+                "name": "copy_trimmed(char *, const unsigned char *, int, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 80,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@has_decimal_or_exp",
+                "kind": 6,
+                "parent_name": "",
+                "name": "has_decimal_or_exp(const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 89,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@is_all_digits_n",
+                "kind": 6,
+                "parent_name": "",
+                "name": "is_all_digits_n(const char *, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 99,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@parse_dbf_date_days_raw",
+                "kind": 6,
+                "parent_name": "",
+                "name": "parse_dbf_date_days_raw(const unsigned char *, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 108,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@parse_yyyymmdd_char_days",
+                "kind": 6,
+                "parent_name": "",
+                "name": "parse_yyyymmdd_char_days(const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 142,
+                "column": 12,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@get_encoding_ce",
+                "kind": 6,
+                "parent_name": "",
+                "name": "get_encoding_ce(const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 152,
+                "column": 17,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@parse_col_target",
+                "kind": 6,
+                "parent_name": "",
+                "name": "parse_col_target(const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 168,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@get_declared_col_target",
+                "kind": 6,
+                "parent_name": "",
+                "name": "get_declared_col_target(SEXP, SEXP, const char *)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 190,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@free_fields",
+                "kind": 6,
+                "parent_name": "",
+                "name": "free_fields(field_info_t *, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 211,
+                "column": 13,
+                "hidden": false
+            },
+            {
+                "usr": "c:dbf_parser.c@F@infer_numeric_target",
+                "kind": 6,
+                "parent_name": "",
+                "name": "infer_numeric_target(const field_info_t *, const unsigned char *, size_t, uint32_t, uint16_t, int, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 221,
+                "column": 21,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@parse_dbf_parts",
+                "kind": 6,
+                "parent_name": "",
+                "name": "parse_dbf_parts(const unsigned char *, size_t, const unsigned char *, size_t, SEXP, double, int, const char *, int, SEXP, SEXP, int, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 274,
+                "column": 6,
+                "hidden": false
+            },
+            {
+                "usr": "c:@F@parse_dbf_buffer",
+                "kind": 6,
+                "parent_name": "",
+                "name": "parse_dbf_buffer(const unsigned char *, size_t, SEXP, double, int, const char *, int, SEXP, SEXP, int, int)",
+                "file": "/Users/leite/Github/datasusr/src/dbf_parser.c",
+                "line": 549,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    },
+    {
+        "file": "/Users/leite/Github/datasusr/src/dbf_parser.h",
+        "file_last_write": 1775001346.0,
+        "definitions": [],
+        "hidden": false
+    },
+    {
+        "file": "/Users/leite/Github/datasusr/src/init.c",
+        "file_last_write": 1775001346.0,
+        "definitions": [
+            {
+                "usr": "c:@F@R_init_datasusr",
+                "kind": 6,
+                "parent_name": "",
+                "name": "R_init_datasusr(DllInfo *)",
+                "file": "/Users/leite/Github/datasusr/src/init.c",
+                "line": 15,
+                "column": 6,
+                "hidden": false
+            }
+        ],
+        "hidden": false
+    }
+]

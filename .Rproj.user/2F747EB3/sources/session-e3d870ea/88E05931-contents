@@ -1,0 +1,2 @@
+datasus_sources()
+datasus_file_types(source = "SIHSUS")

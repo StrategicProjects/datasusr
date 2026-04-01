@@ -1,0 +1,24 @@
+.logo {
+  height: 135px !important;
+  width: 100px !important;
+}
+
+/* Style GitHub-flavored alerts in pkgdown */
+
+.warning-title {
+  color: #d29922;
+}
+
+.warning-banner {
+  border-left: .25rem solid #d29922;
+  padding: .625rem;
+}
+
+.important-title {
+  color: #8250df
+}
+
+.important-banner {
+  border-left: .25rem solid #8250df;
+  padding: .625rem;
+}

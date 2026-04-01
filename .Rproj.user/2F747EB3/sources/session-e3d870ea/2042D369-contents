@@ -1,0 +1,182 @@
+url: https://strategicprojects.github.io/tceper/
+
+template:
+  bootstrap: 5
+  bootswatch: cosmo
+  bslib:
+    primary: "#0d6efd"
+    border-radius: 0.5rem
+    btn-border-radius: 0.25rem
+  includes:
+    in_header: pkgdown/extra.css
+
+home:
+  title: "tceper: R interface to the TCE-PE Open Data API"
+  description: >
+    Access public data on revenues, expenditures, procurement, contracts,
+    public works, legal processes and personnel from the Pernambuco Court
+    of Accounts (TCE-PE) directly from R.
+
+navbar:
+  structure:
+    left:  [intro, reference, articles]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: Getting started
+          href: articles/getting-started.html
+        - text: API endpoints reference
+          href: articles/endpoints-reference.html
+        - text: Exploring endpoints, parameters, and fields
+          href: articles/exploring-endpoints.html
+
+reference:
+  - title: "Core"
+    desc: "Low-level function for querying any API endpoint."
+    contents:
+      - tce_request
+      - tceper-package
+
+  - title: "Endpoint catalog"
+    desc: "Discover endpoints and inspect input/output fields from the built-in API catalog."
+    contents:
+      - tce_catalog
+      - tce_endpoint
+      - tce_params
+      - tce_fields
+      - print.tce_params_tbl
+      - print.tce_fields_tbl
+
+  - title: "Revenues"
+    desc: "State and municipal revenue data."
+    contents:
+      - tce_state_revenues
+      - tce_municipal_revenues
+      - tce_budgeted_revenues
+
+  - title: "Expenditures"
+    desc: "State and municipal expenditure data."
+    contents:
+      - tce_state_expenditures
+      - tce_municipal_expenditures
+      - tce_municipal_transfers
+      - tce_municipal_creditor_types
+      - tce_state_creditor_types
+
+  - title: "Budget commitments"
+    desc: >
+      Commitment (empenho) summaries, liquidations, payments and line
+      items.
+    contents:
+      - tce_commitment_summary
+      - tce_commitment_liquidations
+      - tce_commitment_payments
+      - tce_state_commitment_items
+      - tce_state_price_comparison
+
+  - title: "Suppliers"
+    desc: "Supplier registry and sanctions."
+    contents:
+      - tce_suppliers
+      - tce_sanctions
+      - tce_person_creditor_types
+
+  - title: "Procurement & contracts"
+    desc: >
+      Bids, contracts, amendments, agreements and related lookup tables.
+    contents:
+      - tce_contracts
+      - tce_contract_documents
+      - tce_contract_items
+      - tce_contract_amendments
+      - tce_agreements
+      - tce_bids
+      - tce_bid_details
+      - tce_bid_documents
+      - tce_bid_stages
+      - tce_bid_modalities
+      - tce_bid_statuses
+      - tce_bid_legal_basis
+      - tce_object_characteristics
+      - tce_object_classifications
+      - tce_object_nature
+
+  - title: "Public works"
+    desc: "Engineering works, contractors, audits and school transport."
+    contents:
+      - tce_public_works
+      - tce_public_works_contractors
+      - tce_public_works_audits
+      - tce_school_transport
+
+  - title: "Legal processes"
+    desc: >
+      Processes, determinations, recommendations, outcomes, debts, fines
+      and spending limits.
+    contents:
+      - tce_processes
+      - tce_determinations
+      - tce_consideranda
+      - tce_recommendations
+      - tce_outcomes
+      - tce_retirement_outcomes
+      - tce_special_accountability
+      - tce_debts_fines
+      - tce_spending_limits
+
+  - title: "Personnel"
+    desc: "Public servant records."
+    contents:
+      - tce_servants
+
+  - title: "Reference tables"
+    desc: >
+      Municipalities, managed entities, sub-units, creditor types,
+      payroll types, funding sources and inactivation reasons.
+    contents:
+      - tce_municipalities
+      - tce_entities
+      - tce_state_entities
+      - tce_municipal_entities
+      - tce_sub_units
+      - tce_creditor_types
+      - tce_payroll_types
+      - tce_funding_sources
+      - tce_inactivation_reasons
+
+  - title: "RemessaTCEPE"
+    desc: >
+      Data from the RemessaTCEPE system: benefit types, reference
+      sources/dates/codes, update indices, budget statuses, legal
+      instruments, procurement processes and public works.
+    contents:
+      - tce_benefit_types
+      - tce_reference_sources
+      - tce_reference_dates
+      - tce_reference_codes
+      - tce_update_indices
+      - tce_budget_statuses
+      - tce_legal_instruments
+      - tce_legal_instrument_documents
+      - tce_legal_instrument_items
+      - tce_legal_instrument_participants
+      - tce_procurement_processes
+      - tce_procurement_process_documents
+      - tce_procurement_process_budget
+      - tce_procurement_process_participants
+      - tce_remessa_works
+      - tce_remessa_works_execution
+      - tce_remessa_works_geometry
+
+  - title: "Cache"
+    desc: "Manage the in-memory cache."
+    contents:
+      - tce_cache_clear
+      - tce_cache_info
+
+footer:
+  structure:
+    left: developed_by
+    right: built_with
