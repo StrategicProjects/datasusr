@@ -2,7 +2,7 @@
 # datasusr <img src="man/figures/logo.svg" align="right" height="139" />
 
 <!-- badges: start -->
-[![R-CMD-check](https://github.com/StrategicProjects/datasusr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/StrategicProjects/tesouror/actions/workflows/R-CMD-check.yaml)
+[![R-CMD-check](https://github.com/StrategicProjects/datasusr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/StrategicProjects/datasusr/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
 
 
