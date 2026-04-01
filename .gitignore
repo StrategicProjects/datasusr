@@ -20,3 +20,4 @@ src/*.dll
 
 # Local cache
 inst/cache/
+.DS_Store
