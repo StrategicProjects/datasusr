@@ -1,6 +1,22 @@
-.Rproj.user
+# R package build artifacts
+*.tar.gz
+*.Rcheck/
+src/*.o
+src/*.so
+src/*.dll
+
+# RStudio project files
+.Rproj.user/
 .Rhistory
+.Rdata
+.httr-oauth
 .RData
-.Ruserdata
+
+# macOS
 .DS_Store
-inst/doc
+
+# Byte-compiled / optimized
+*.pyc
+
+# Local cache
+inst/cache/

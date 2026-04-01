@@ -24,7 +24,8 @@ A tibble with columns `path`, `file_name`, `size_bytes`,
 
 ``` r
 datasus_cache_list()
-#> # A tibble: 0 × 5
-#> # ℹ 5 variables: path <chr>, file_name <chr>, size_bytes <dbl>,
-#> #   modified_time <dttm>, accessed_time <dttm>
+#> # A tibble: 1 × 5
+#>   path              file_name size_bytes modified_time       accessed_time      
+#>   <chr>             <chr>          <dbl> <dttm>              <dttm>             
+#> 1 /Users/leite/Lib… RDPE2401…    3695686 2025-02-09 21:30:54 2025-02-09 21:30:54
 ```
