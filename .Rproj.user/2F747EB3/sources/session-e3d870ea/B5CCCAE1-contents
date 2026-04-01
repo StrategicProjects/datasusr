@@ -2,7 +2,9 @@
 # datasusr <img src="man/figures/logo.svg" align="right" height="139" />
 
 <!-- badges: start -->
+[![R-CMD-check](https://github.com/StrategicProjects/datasusr/actions/workflows/R-CMD-check.yaml/badge.svg)](https://github.com/StrategicProjects/tesouror/actions/workflows/R-CMD-check.yaml)
 <!-- badges: end -->
+
 
 **datasusr** provides fast, in-memory reading of DATASUS `.dbc` files and a
 complete workflow for discovering, downloading, caching, and reading Brazilian
@@ -27,6 +29,9 @@ original data layouts and field descriptions, use
 <code>datasus_docs_url()</code> or see the
 <a href="https://datasus.saude.gov.br">official DATASUS documentation</a>.
 </td></tr></table>
+
+
+
 
 ## Installation
 
@@ -105,6 +110,13 @@ datasus_cache_clear()
 
 You can configure the cache directory via the `DATASUSR_CACHE_DIR` environment
 variable, the `datasusr.cache_dir` R option, or the `cache_dir` argument.
+
+## Data sources
+
+<p align="center">
+<img src="man/figures/sources.svg" alt="DATASUS data sources supported by datasusr" width="680">
+</p>
+
 
 ## Main functions
 

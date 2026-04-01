@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Comparison with read.dbc and microdatasus • datasusr</title>
+<title>Comparison with microdatasus • datasusr</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Comparison with read.dbc and microdatasus">
+<meta property="og:title" content="Comparison with microdatasus">
 </head>
 <body>pkgdown/extra.css
 
@@ -49,7 +49,7 @@
     <li><a class="dropdown-item" href="../articles/data-sources.html">Available data sources</a></li>
     <li><a class="dropdown-item" href="../articles/cache-and-downloads.html">Cache and downloads</a></li>
     <li><a class="dropdown-item" href="../articles/performance-notes.html">Performance notes</a></li>
-    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with read.dbc and microdatasus</a></li>
+    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with microdatasus</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -71,7 +71,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Comparison with read.dbc and microdatasus</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Comparison with microdatasus</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/StrategicProjects/datasusr/blob/HEAD/vignettes/comparison.Rmd" class="external-link"><code>vignettes/comparison.Rmd</code></a></small>
@@ -80,249 +80,278 @@
 
     
     
-<p>Several R packages provide access to DATASUS data. This article
-compares <code>datasusr</code> with the two most established
-alternatives — <code>read.dbc</code> and <code>microdatasus</code> — to
-help you choose the right tool for your workflow.</p>
+<p>The <a href="https://github.com/rfsaldanha/microdatasus" class="external-link"><code>microdatasus</code></a>
+package (Saldanha, Bastos &amp; Barcellos, 2019) is the most widely used
+R package for downloading and pre-processing DATASUS microdata. This
+article compares it with <code>datasusr</code> to help you choose the
+right tool for your workflow.</p>
 <div class="section level2">
-<h2 id="overview">Overview<a class="anchor" aria-label="anchor" href="#overview"></a>
+<h2 id="feature-comparison">Feature comparison<a class="anchor" aria-label="anchor" href="#feature-comparison"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="25%">
-<col width="25%">
-<col width="25%">
-<col width="25%">
+<col width="33%">
+<col width="33%">
+<col width="33%">
 </colgroup>
 <thead><tr class="header">
 <th>Feature</th>
 <th>datasusr</th>
-<th>read.dbc</th>
 <th>microdatasus</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
-<td>Read DBC files</td>
-<td>In-memory C parser</td>
-<td>Temp DBF + <code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf</a></code>
-</td>
-<td>Via <code>read.dbc</code> dependency</td>
+<td><strong>DBC reading</strong></td>
+<td>In-memory C parser (bundled)</td>
+<td>Via <code>read.dbc</code> (external dep)</td>
 </tr>
 <tr class="even">
-<td>Column selection at read time</td>
+<td><strong>Column selection at read</strong></td>
 <td>Yes (<code>select</code>)</td>
-<td>No</td>
 <td>Yes (<code>vars</code>)</td>
 </tr>
 <tr class="odd">
-<td>Type control (<code>col_types</code>, <code>guess_types</code>)</td>
-<td>Yes</td>
-<td>No</td>
+<td><strong>Type control</strong></td>
+<td>Yes (<code>col_types</code>, <code>guess_types</code>)</td>
 <td>No</td>
 </tr>
 <tr class="even">
-<td>Date parsing at read time</td>
+<td><strong>Date parsing at read</strong></td>
 <td>Yes (<code>parse_dates</code>)</td>
-<td>No</td>
 <td>Via <code>process_*()</code> post-hoc</td>
 </tr>
 <tr class="odd">
-<td>Column names in snake_case</td>
-<td>Yes (<code>clean_names</code>)</td>
-<td>No (uppercase)</td>
-<td>No (uppercase)</td>
+<td><strong>Column names</strong></td>
+<td>snake_case by default (<code>clean_names</code>)</td>
+<td>Uppercase (original)</td>
 </tr>
 <tr class="even">
-<td>Returns tibble</td>
-<td>Always</td>
-<td><code>data.frame</code></td>
-<td>
-<code>tibble</code> (after processing)</td>
+<td><strong>Return type</strong></td>
+<td>Always tibble</td>
+<td>tibble (after <code>process_*()</code>)</td>
 </tr>
 <tr class="odd">
-<td>FTP catalog / discovery</td>
-<td>Yes (18 sources)</td>
-<td>No</td>
-<td>Yes (<code>fetch_datasus()</code>)</td>
+<td><strong>Data sources</strong></td>
+<td>18 systems catalogued</td>
+<td>~15 systems</td>
 </tr>
 <tr class="even">
-<td>Download with caching</td>
-<td>Yes (persistent, configurable)</td>
+<td><strong>Catalog browsing</strong></td>
+<td>Yes (<code><a href="../reference/datasus_sources.html">datasus_sources()</a></code>,
+<code><a href="../reference/datasus_file_types.html">datasus_file_types()</a></code>)</td>
 <td>No</td>
-<td>Yes (session-level)</td>
 </tr>
 <tr class="odd">
-<td>Parallel downloads with progress</td>
-<td>Yes (<code><a href="https://jeroen.r-universe.dev/curl/reference/multi_download.html" class="external-link">curl::multi_download</a></code>)</td>
-<td>No</td>
+<td><strong>FTP file listing</strong></td>
+<td>Yes (<code><a href="../reference/datasus_list_files.html">datasus_list_files()</a></code>,
+<code><a href="../reference/datasus_ftp_ls.html">datasus_ftp_ls()</a></code>)</td>
 <td>No</td>
 </tr>
 <tr class="even">
-<td>Variable labelling / recoding</td>
-<td>No</td>
-<td>No</td>
-<td>Yes (<code>process_*()</code> functions)</td>
+<td><strong>Persistent cache</strong></td>
+<td>Yes (configurable dir, env var, pruning)</td>
+<td>Session-level temp files</td>
 </tr>
 <tr class="odd">
-<td>One-step fetch + read</td>
+<td><strong>Parallel downloads</strong></td>
+<td>Yes (<code><a href="https://jeroen.r-universe.dev/curl/reference/multi_download.html" class="external-link">curl::multi_download</a></code>, progress bars)</td>
+<td>Sequential</td>
+</tr>
+<tr class="even">
+<td><strong>Territorial tables</strong></td>
+<td>Yes (<code><a href="../reference/datasus_get_territory.html">datasus_get_territory()</a></code>)</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td><strong>Documentation paths</strong></td>
+<td>Yes (<code><a href="../reference/datasus_docs_url.html">datasus_docs_url()</a></code>)</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td><strong>Variable labelling</strong></td>
+<td>No</td>
+<td>Yes (<code>process_*()</code> family)</td>
+</tr>
+<tr class="odd">
+<td><strong>One-step fetch</strong></td>
 <td>Yes (<code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code>)</td>
-<td>No</td>
 <td>Yes (<code>fetch_datasus()</code>)</td>
 </tr>
 <tr class="even">
-<td>CRAN status</td>
-<td>GitHub</td>
-<td>Archived</td>
-<td>Archived (dep on <code>read.dbc</code>)</td>
+<td><strong>Preliminary data</strong></td>
+<td>Yes (<code>include_prelim</code> flag)</td>
+<td>Yes (e.g. <code>"SIM-DO-PRELIM"</code>)</td>
 </tr>
 <tr class="odd">
-<td>License</td>
+<td><strong>CRAN</strong></td>
+<td>GitHub</td>
+<td>Archived (dep on archived <code>read.dbc</code>)</td>
+</tr>
+<tr class="even">
+<td><strong>License</strong></td>
 <td>MIT</td>
-<td>AGPL-3</td>
 <td>MIT</td>
 </tr>
 </tbody>
 </table>
 </div>
 <div class="section level2">
-<h2 id="dbc-reading-architecture">DBC reading: architecture<a class="anchor" aria-label="anchor" href="#dbc-reading-architecture"></a>
+<h2 id="reading-dbc-files">Reading DBC files<a class="anchor" aria-label="anchor" href="#reading-dbc-files"></a>
 </h2>
-<p>The three packages take fundamentally different approaches to reading
-<code>.dbc</code> files:</p>
-<p><strong>read.dbc</strong> decompresses the <code>.dbc</code> to a
-temporary <code>.dbf</code> on disk using C code (<code>dbc2dbf</code>),
-then calls <code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code> to parse it. This two-step
-process is reliable but involves disk I/O for the intermediate file and
+<p>Both packages ultimately use C code based on Mark Adler’s
+<code>blast</code> decompressor for the PKWare DCL format used by
+DATASUS. The key difference is in how the decompressed data is
+handled:</p>
+<p><strong>microdatasus</strong> delegates reading to the
+<code>read.dbc</code> package, which decompresses the <code>.dbc</code>
+to a temporary <code>.dbf</code> file on disk, then calls
+<code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code> to parse it into a
+<code>data.frame</code>. This two-step process involves disk I/O and
 inherits the type limitations of <code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code> (all
-numeric fields become <code>double</code>; no column selection).</p>
-<p><strong>microdatasus</strong> depends on <code>read.dbc</code> for
-the file reading step. Its main value is in the
-<code>fetch_datasus()</code> download function and the
-<code>process_*()</code> family, which recode categorical variables
-(e.g. replacing municipality codes with names, labelling sex, age
-groups, etc.). It also supports column selection via the
-<code>vars</code> parameter.</p>
+numeric fields become <code>double</code>).</p>
 <p><strong>datasusr</strong> performs decompression and DBF parsing
 entirely in memory in a single C call. The compressed payload is
-decompressed with <code>blast</code> (the same algorithm used by
-<code>read.dbc</code>) directly into a memory buffer, then parsed
-field-by-field into pre-allocated R vectors. This avoids temporary files
-and enables features like column selection (<code>select</code>), type
-inference (<code>guess_types</code>), explicit type control
-(<code>col_types</code>), and date parsing (<code>parse_dates</code>) at
-the C level.</p>
+decompressed directly into a memory buffer and parsed field-by-field
+into pre-allocated R vectors. This avoids temporary files and enables
+features like column selection, type inference, and date parsing at the
+C level. It also handles a wider range of DBC variants, including files
+with non-standard header terminators found in some CNES files.</p>
 </div>
 <div class="section level2">
-<h2 id="download-and-catalog-features">Download and catalog features<a class="anchor" aria-label="anchor" href="#download-and-catalog-features"></a>
+<h2 id="downloading-and-discovering-data">Downloading and discovering data<a class="anchor" aria-label="anchor" href="#downloading-and-discovering-data"></a>
 </h2>
-<p>Both <code>datasusr</code> and <code>microdatasus</code> provide
-functions to discover and download files from the DATASUS FTP. They
-differ in design:</p>
-<p><strong>microdatasus</strong> exposes a single
-<code>fetch_datasus()</code> function that takes high-level parameters
-(<code>year_start</code>, <code>year_end</code>, <code>uf</code>,
-<code>information_system</code>) and handles path construction
-internally. It downloads, reads, and binds files in one call. This is
-convenient but offers limited control over which specific files are
-retrieved.</p>
-<p><strong>datasusr</strong> offers a layered API:
-<code><a href="../reference/datasus_sources.html">datasus_sources()</a></code> and <code><a href="../reference/datasus_file_types.html">datasus_file_types()</a></code> let
-you browse the catalog, <code><a href="../reference/datasus_list_files.html">datasus_list_files()</a></code> generates and
-validates file lists, <code><a href="../reference/datasus_download.html">datasus_download()</a></code> handles
-downloading with caching, and <code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code> wraps them
-all for one-step convenience. This design lets you inspect and customise
-each step.</p>
-<p>Both packages support caching of downloaded files.
-<code>datasusr</code> provides a persistent, configurable cache with
-explicit management functions (<code><a href="../reference/datasus_cache_info.html">datasus_cache_info()</a></code>,
-<code><a href="../reference/datasus_cache_prune.html">datasus_cache_prune()</a></code>, <code><a href="../reference/datasus_cache_clear.html">datasus_cache_clear()</a></code>)
-and supports configuration via environment variable, R option, or
-function argument.</p>
+<p>Both packages provide a one-step function to download and read
+files:</p>
+<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># --- datasusr -----------------------------------------------------------------</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://strategicprojects.github.io/datasusr/">datasusr</a></span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_fetch.html">datasus_fetch</a></span><span class="op">(</span></span>
+<span>  source <span class="op">=</span> <span class="st">"SIHSUS"</span>, file_type <span class="op">=</span> <span class="st">"RD"</span>,</span>
+<span>  year <span class="op">=</span> <span class="fl">2024</span>, month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, uf <span class="op">=</span> <span class="st">"PE"</span>,</span>
+<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"uf_zi"</span>, <span class="st">"ano_cmpt"</span>, <span class="st">"munic_res"</span>, <span class="st">"val_tot"</span><span class="op">)</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># --- microdatasus -------------------------------------------------------------</span></span>
+<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">microdatasus</span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">fetch_datasus</span><span class="op">(</span></span>
+<span>  year_start <span class="op">=</span> <span class="fl">2024</span>, year_end <span class="op">=</span> <span class="fl">2024</span>,</span>
+<span>  month_start <span class="op">=</span> <span class="fl">1</span>, month_end <span class="op">=</span> <span class="fl">3</span>,</span>
+<span>  uf <span class="op">=</span> <span class="st">"PE"</span>, information_system <span class="op">=</span> <span class="st">"SIH-RD"</span></span>
+<span><span class="op">)</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">process_sih</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
+<p>Where the packages differ in design:</p>
+<p><strong>microdatasus</strong> uses a single function
+(<code>fetch_datasus()</code>) with all parameters upfront. The system
+name uses a hyphenated format (<code>"SIH-RD"</code>,
+<code>"SIM-DO"</code>, <code>"CNES-ST"</code>). Path construction is
+handled internally. This is simple and effective for common use
+cases.</p>
+<p><strong>datasusr</strong> offers a layered API that can be used at
+any level of granularity:</p>
+<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="co"># Browse what's available</span></span>
+<span><span class="fu"><a href="../reference/datasus_sources.html">datasus_sources</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/datasus_file_types.html">datasus_file_types</a></span><span class="op">(</span>source <span class="op">=</span> <span class="st">"SINAN"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Check which files exist on the FTP</span></span>
+<span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_list_files.html">datasus_list_files</a></span><span class="op">(</span></span>
+<span>  source <span class="op">=</span> <span class="st">"SINAN"</span>, file_type <span class="op">=</span> <span class="st">"DENG"</span>,</span>
+<span>  year <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span></span>
+<span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Download with parallel connections and progress bars</span></span>
+<span><span class="va">downloads</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_download.html">datasus_download</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Read with type control</span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_datasus_dbc.html">read_datasus_dbc</a></span><span class="op">(</span></span>
+<span>  <span class="va">downloads</span><span class="op">$</span><span class="va">local_file</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
+<span>  select    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dt_notific"</span>, <span class="st">"id_municip"</span>, <span class="st">"classi_fin"</span><span class="op">)</span>,</span>
+<span>  col_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dt_notific <span class="op">=</span> <span class="st">"date"</span><span class="op">)</span>,</span>
+<span>  parse_dates <span class="op">=</span> <span class="cn">TRUE</span></span>
+<span><span class="op">)</span></span></code></pre></div>
+<p>Or use <code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code> to do it all in one call, just
+like microdatasus.</p>
+</div>
+<div class="section level2">
+<h2 id="caching">Caching<a class="anchor" aria-label="anchor" href="#caching"></a>
+</h2>
+<p><strong>microdatasus</strong> downloads files to a temporary
+directory (<code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>). Files are not preserved between R
+sessions, so re-running the same query triggers a new download from the
+DATASUS FTP.</p>
+<p><strong>datasusr</strong> maintains a persistent cache directory that
+survives between sessions. Repeated calls with the same parameters reuse
+cached files without any network access. The cache location can be
+configured via the <code>DATASUSR_CACHE_DIR</code> environment variable,
+the <code>datasusr.cache_dir</code> R option, or the
+<code>cache_dir</code> argument. Management functions let you inspect,
+prune, or clear the cache:</p>
+<div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/datasus_cache_info.html">datasus_cache_info</a></span><span class="op">(</span><span class="op">)</span>                         <span class="co"># summary</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>older_than_days <span class="op">=</span> <span class="fl">90</span><span class="op">)</span>    <span class="co"># remove old files</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>max_size_bytes <span class="op">=</span> <span class="fl">5e9</span><span class="op">)</span>    <span class="co"># cap total size</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_clear.html">datasus_cache_clear</a></span><span class="op">(</span><span class="op">)</span>                        <span class="co"># remove everything</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="variable-labelling">Variable labelling<a class="anchor" aria-label="anchor" href="#variable-labelling"></a>
 </h2>
-<p>One area where <code>microdatasus</code> stands out is
-<strong>post-processing</strong>. Its <code>process_sim()</code>,
-<code>process_sinasc()</code>, <code>process_sih()</code>,
-<code>process_sia()</code>, and <code>process_cnes()</code> functions
-decode categorical fields: they replace numeric codes with
-human-readable labels for variables like sex, race, municipality, cause
-of death (ICD-10), and procedures. This saves considerable manual work
-when building descriptive analyses.</p>
-<p><code>datasusr</code> does not currently provide variable labelling.
-It focuses on fast, flexible I/O and leaves the semantic interpretation
-to the analyst. If you need labelled variables, you can apply your own
-lookup tables on the tibble returned by <code>datasusr</code>.</p>
+<p>This is where <code>microdatasus</code> provides significant added
+value. Its <code>process_*()</code> functions decode categorical fields
+by replacing numeric codes with human-readable labels. For example,
+<code>process_sim()</code> converts ICD-10 codes to descriptions,
+municipality codes to names, and numeric sex/race indicators to labelled
+factors. This is done for SIM, SINASC, SIH, SIA, CNES, and several SINAN
+diseases.</p>
+<p><code>datasusr</code> does not perform variable labelling. It returns
+the raw values from the DBC files, leaving semantic interpretation to
+the analyst. If you need labelled variables, you can use the territorial
+tables as lookup references:</p>
+<div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">municipios</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_get_territory.html">datasus_get_territory</a></span><span class="op">(</span><span class="st">"tb_municip"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_fetch.html">datasus_fetch</a></span><span class="op">(</span></span>
+<span>  source <span class="op">=</span> <span class="st">"SIM"</span>, file_type <span class="op">=</span> <span class="st">"DO"</span>,</span>
+<span>  year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"PE"</span></span>
+<span><span class="op">)</span> <span class="op">|&gt;</span></span>
+<span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">municipios</span>, <span class="va">co_municip</span>, <span class="va">ds_nome</span><span class="op">)</span>,</span>
+<span>    by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"codmunocor"</span> <span class="op">=</span> <span class="st">"co_municip"</span><span class="op">)</span></span>
+<span>  <span class="op">)</span></span></code></pre></div>
 </div>
 <div class="section level2">
 <h2 id="cran-availability">CRAN availability<a class="anchor" aria-label="anchor" href="#cran-availability"></a>
 </h2>
-<p>As of this writing, both <code>read.dbc</code> and
-<code>microdatasus</code> have been archived from CRAN.
-<code>microdatasus</code> was archived due to its dependency on
-<code>read.dbc</code>. Both remain installable from GitHub.
-<code>datasusr</code> is available on GitHub and has no dependency on
-either package.</p>
+<p>As of this writing, <code>microdatasus</code> has been archived from
+CRAN because it depends on <code>read.dbc</code>, which is also
+archived. Both remain installable from GitHub. <code>datasusr</code> is
+available on GitHub and has no dependency on either package — it bundles
+its own C code for DBC decompression.</p>
 </div>
 <div class="section level2">
 <h2 id="when-to-use-which">When to use which<a class="anchor" aria-label="anchor" href="#when-to-use-which"></a>
 </h2>
-<p>Use <strong><code>datasusr</code></strong> when you need fast,
-flexible reads of <code>.dbc</code> files — for example, reading
-specific columns from large files, controlling types, or building
-reproducible pipelines with persistent caching. It works well as a
-standalone package for data engineering tasks and integrates naturally
-with the tidyverse.</p>
-<p>Use <strong><code>microdatasus</code></strong> when you want
-labelled, analysis-ready data frames with minimal code. The
-<code>process_*()</code> functions are a significant time-saver for
-exploratory epidemiological analyses.</p>
-<p>Use <strong><code>read.dbc</code></strong> when you just need to read
-a <code>.dbc</code> file into a data frame and don’t need column
-selection, type control, or download helpers.</p>
-</div>
-<div class="section level2">
-<h2 id="code-comparison">Code comparison<a class="anchor" aria-label="anchor" href="#code-comparison"></a>
-</h2>
-<p>Reading a single DBC file with each package:</p>
-<div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># --- datasusr -----------------------------------------------------------------</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://strategicprojects.github.io/datasusr/">datasusr</a></span><span class="op">)</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_datasus_dbc.html">read_datasus_dbc</a></span><span class="op">(</span></span>
-<span>  <span class="st">"RDPE2401.dbc"</span>,</span>
-<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"uf_zi"</span>, <span class="st">"ano_cmpt"</span>, <span class="st">"val_tot"</span><span class="op">)</span>,</span>
-<span>  col_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>val_tot <span class="op">=</span> <span class="st">"double"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># --- read.dbc -----------------------------------------------------------------</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">read.dbc</span><span class="op">)</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">read.dbc</span><span class="op">(</span><span class="st">"RDPE2401.dbc"</span><span class="op">)</span>        <span class="co"># returns full data.frame, all columns uppercase</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="va">x</span><span class="op">[</span>, <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"UF_ZI"</span>, <span class="st">"ANO_CMPT"</span>, <span class="st">"VAL_TOT"</span><span class="op">)</span><span class="op">]</span></span>
-<span></span>
-<span><span class="co"># --- microdatasus -------------------------------------------------------------</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">microdatasus</span><span class="op">)</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">fetch_datasus</span><span class="op">(</span></span>
-<span>  year_start <span class="op">=</span> <span class="fl">2024</span>, year_end <span class="op">=</span> <span class="fl">2024</span>,</span>
-<span>  month_start <span class="op">=</span> <span class="fl">1</span>, month_end <span class="op">=</span> <span class="fl">1</span>,</span>
-<span>  uf <span class="op">=</span> <span class="st">"PE"</span>, information_system <span class="op">=</span> <span class="st">"SIH-RD"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">x</span> <span class="op">&lt;-</span> <span class="fu">process_sih</span><span class="op">(</span><span class="va">x</span><span class="op">)</span></span></code></pre></div>
-<p>Downloading and reading a full year:</p>
-<div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># --- datasusr -----------------------------------------------------------------</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_fetch.html">datasus_fetch</a></span><span class="op">(</span></span>
-<span>  source <span class="op">=</span> <span class="st">"SIHSUS"</span>, file_type <span class="op">=</span> <span class="st">"RD"</span>,</span>
-<span>  year <span class="op">=</span> <span class="fl">2024</span>, month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">12</span>, uf <span class="op">=</span> <span class="st">"PE"</span>,</span>
-<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"uf_zi"</span>, <span class="st">"ano_cmpt"</span>, <span class="st">"val_tot"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
-<span></span>
-<span><span class="co"># --- microdatasus -------------------------------------------------------------</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">fetch_datasus</span><span class="op">(</span></span>
-<span>  year_start <span class="op">=</span> <span class="fl">2024</span>, year_end <span class="op">=</span> <span class="fl">2024</span>,</span>
-<span>  uf <span class="op">=</span> <span class="st">"PE"</span>, information_system <span class="op">=</span> <span class="st">"SIH-RD"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">process_sih</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
+<p><strong>Choose <code>datasusr</code></strong> when you need:</p>
+<ul>
+<li>Fast reads of large DBC files with column selection and type
+control</li>
+<li>Persistent caching to avoid re-downloading</li>
+<li>Exploratory browsing of the DATASUS catalog and FTP</li>
+<li>Parallel downloads with progress bars</li>
+<li>Territorial reference tables (municipalities, health regions)</li>
+<li>A tidyverse-native workflow with snake_case column names</li>
+</ul>
+<p><strong>Choose <code>microdatasus</code></strong> when you need:</p>
+<ul>
+<li>Automatic variable labelling and categorical recoding</li>
+<li>Analysis-ready data frames with minimal code</li>
+<li>A well-documented, published package (Cad. Saude Publica, 2019)</li>
+</ul>
+<p>The two packages can also complement each other: use
+<code>datasusr</code> for fast, cached I/O and
+<code>microdatasus::process_*()</code> for post-processing when
+needed.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

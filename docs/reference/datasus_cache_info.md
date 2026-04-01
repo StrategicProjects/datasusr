@@ -31,11 +31,11 @@ datasus_cache_info()
 #> ── datasusr cache ──
 #> 
 #> ℹ Directory: /Users/leite/Library/Caches/org.R-project.R/R/datasusr
-#> ℹ Files: 38
-#> ℹ Total size: 201.32 MB
+#> ℹ Files: 0
+#> ℹ Total size: 0 B
 #> # A tibble: 1 × 6
-#>   cache_dir              n_files total_size_bytes total_size oldest_modified    
-#>   <chr>                    <int>            <dbl> <chr>      <dttm>             
-#> 1 /Users/leite/Library/…      38        211096413 201.32 MB  2025-06-27 08:53:00
+#>   cache_dir              n_files total_size_bytes total_size oldest_modified
+#>   <chr>                    <int>            <dbl> <chr>      <dttm>         
+#> 1 /Users/leite/Library/…       0                0 0 B        NA             
 #> # ℹ 1 more variable: newest_modified <dttm>
 ```

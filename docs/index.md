@@ -90,6 +90,11 @@ You can configure the cache directory via the `DATASUSR_CACHE_DIR`
 environment variable, the `datasusr.cache_dir` R option, or the
 `cache_dir` argument.
 
+## Data sources
+
+![DATASUS data sources supported by
+datasusr](reference/figures/sources.svg)
+
 ## Main functions
 
 | Function | Purpose |
