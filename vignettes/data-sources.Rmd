@@ -263,22 +263,6 @@ df <- datasus_fetch(
 )
 ```
 
-## Population estimates (IBGE)
-
-IBGE population data published through DATASUS. These files use `.dbf`
-format (not `.dbc`).
-
-```{r}
-# Census and estimates
-df <- datasus_fetch(source = "IBGE", file_type = "POP", year = 2012)
-
-# Estimates by sex and age
-df <- datasus_fetch(source = "IBGE", file_type = "POPS", year = 2012)
-
-# TCU estimates
-df <- datasus_fetch(source = "IBGE", file_type = "POPT", year = 2021)
-```
-
 ## Territorial reference tables
 
 Territorial data (municipality names, health regions, geographic divisions)

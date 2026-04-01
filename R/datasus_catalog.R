@@ -23,7 +23,6 @@
     "RESP",             "RESP - Notificacoes de casos suspeitos de SCZ",                              "UF",           FALSE,           TRUE,         "fetch",     FALSE,
     "PO",               "PO - Painel de Oncologia",                                                   "BR",           FALSE,           FALSE,        "fetch",     FALSE,
     "PCE",              "PCE - Programa de Controle da Esquistossomose",                              "UF",           FALSE,           TRUE,         "fetch",     FALSE,
-    "IBGE",             "Base Populacional - IBGE",                                                   "BR",           FALSE,           FALSE,        "fetch",     FALSE,
     "DATASUS",          "Aplicativos - TABWIN/TABNET",                                                "BR",           FALSE,           FALSE,        "ftp_only",  TRUE,
     "BASE_TERRITORIAL", "Base Territorial - Mapas e conversoes para tabulacao",                       "BR",           FALSE,           FALSE,        "territory", TRUE
   )
@@ -129,9 +128,6 @@
     "RESP",             "RESP",     "RESP - Notificacoes de casos suspeitos de SCZ",                                "UF",   "yearly",   "current",
     "PO",               "PO",       "PO - Painel de Oncologia",                                                     "BR",   "yearly",   "current",
     "PCE",              "PCE",      "PCE - Programa de Controle da Esquistossomose",                                "UF",   "yearly",   "current",
-    "IBGE",             "POP",      "POP - Censo e Estimativas",                                                    "BR",   "yearly",   "current",
-    "IBGE",             "POPS",     "POPS - Estimativas por sexo e idade",                                          "BR",   "yearly",   "current",
-    "IBGE",             "POPT",     "POPT - Estimativas TCU",                                                       "BR",   "yearly",   "current",
     "DATASUS",          "TABWIN",   "TABWIN - Tabulador de dados para Windows",                                     "BR",   "static",   "current",
     "DATASUS",          "TABNET",   "TABNET - Tabulador de dados para internet",                                    "BR",   "static",   "current",
     "DATASUS",          "TABDOS",   "TABDOS - Tabulador de dados para DOS",                                         "BR",   "static",   "current",
@@ -196,10 +192,6 @@
     "RESP",     NA_character_,   "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/RESP/DADOS/",
     "PO",       NA_character_,   "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/painel_oncologia/Dados/",
     "PCE",      NA_character_,   "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/PCE/DADOS/",
-    # --- IBGE ---
-    "IBGE",     "POP",           "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/IBGE/POP/",
-    "IBGE",     "POPS",          "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/IBGE/POPS/",
-    "IBGE",     "POPT",          "current",     "ftp://ftp.datasus.gov.br/dissemin/publicos/IBGE/POPT/"
   )
 }
 
@@ -557,13 +549,6 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
     ))
   }
 
-  # IBGE population files: use .dbf extension and include "BR" scope
-  # e.g. POPBR12.dbf, POPTBR21.dbf
-  if (src_code == "IBGE") {
-    return(tibble::tibble(
-      file_name = stringr::str_c(ft_code, "BR", stringr::str_sub(tokens, 3, 4), ".dbf")
-    ))
-  }
 
   # Other national scope (BR / TT)
   if (scope %in% c("BR", "TT")) {
