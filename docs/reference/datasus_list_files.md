@@ -71,13 +71,23 @@ A tibble with one row per file, including its FTP URL and metadata.
 ## Examples
 
 ``` r
-if (FALSE) { # \dontrun{
-datasus_list_files(
-  source    = "SIHSUS",
-  file_type = "RD",
-  year      = 2024,
-  month     = 1,
-  uf        = c("PE", "PB")
+# \donttest{
+tryCatch(
+  datasus_list_files(
+    source    = "SIHSUS",
+    file_type = "RD",
+    year      = 2024,
+    month     = 1,
+    uf        = c("PE", "PB"),
+    verbose   = FALSE
+  ),
+  error = function(e) message("FTP unavailable: ", conditionMessage(e))
 )
-} # }
+#> # A tibble: 2 × 11
+#>   source file_type description       scope frequency availability period  path  
+#>   <chr>  <chr>     <chr>             <chr> <chr>     <chr>        <chr>   <chr> 
+#> 1 SIHSUS RD        RD - AIH Reduzida UF    monthly   current      current ftp:/…
+#> 2 SIHSUS RD        RD - AIH Reduzida UF    monthly   current      current ftp:/…
+#> # ℹ 3 more variables: file_name <chr>, url <chr>, exists <lgl>
+# }
 ```

@@ -12,6 +12,31 @@ template:
 
 home:
   title: "datasusr - Fast Access to Brazilian Public Health Data from DATASUS"
+  description: >
+    A focused, dependency-light reader for DATASUS DBC files plus a catalog
+    and FTP layer. For broader Brazilian public-health workflows (IBGE
+    surveys, SISAB, ANS, ANVISA, variable dictionaries) consider healthbR
+    first — see "Comparison with healthbR and microdatasus".
+
+navbar:
+  structure:
+    left:  [intro, reference, articles, news]
+    right: [search, github]
+  components:
+    articles:
+      text: Articles
+      menu:
+        - text: "Getting started"
+          href: articles/getting-started.html
+        - text: "Data sources"
+          href: articles/data-sources.html
+        - text: "Cache and downloads"
+          href: articles/cache-and-downloads.html
+        - text: "Performance notes"
+          href: articles/performance-notes.html
+        - text: -------
+        - text: "Comparison with healthbR and microdatasus"
+          href: articles/comparison.html
 
 reference:
   - title: High-level workflow
@@ -55,4 +80,8 @@ articles:
       - data-sources
       - cache-and-downloads
       - performance-notes
+
+  - title: Choosing a package
+    navbar: Comparison
+    contents:
       - comparison

@@ -17,8 +17,10 @@
 <link href="deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="deps/headroom-0.11.0/headroom.min.js"></script><script src="deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="deps/search-1.0.0/fuse.min.js"></script><script src="deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="pkgdown.js"></script><link href="extra.css" rel="stylesheet">
 <meta property="og:title" content="datasusr - Fast Access to Brazilian Public Health Data from DATASUS">
-<meta name="description" content="Provides fast, in-memory reading of DATASUS DBC files using native C code, along with a catalog of public health data sources, FTP file discovery, caching downloads, and a high-level datasus_fetch() function that lists, downloads, and reads files in a single call. Bundles the blast decompressor from zlib contrib/blast to decode PKWare DCL-compressed DBC files and parses DBF records directly for efficient import into tibbles.">
-<meta property="og:description" content="Provides fast, in-memory reading of DATASUS DBC files using native C code, along with a catalog of public health data sources, FTP file discovery, caching downloads, and a high-level datasus_fetch() function that lists, downloads, and reads files in a single call. Bundles the blast decompressor from zlib contrib/blast to decode PKWare DCL-compressed DBC files and parses DBF records directly for efficient import into tibbles.">
+<meta name="description" content='A focused, dependency-light reader for DATASUS DBC files plus a catalog and FTP layer. For broader Brazilian public-health workflows (IBGE surveys, SISAB, ANS, ANVISA, variable dictionaries) consider healthbR first — see "Comparison with healthbR and microdatasus".
+'>
+<meta property="og:description" content='A focused, dependency-light reader for DATASUS DBC files plus a catalog and FTP layer. For broader Brazilian public-health workflows (IBGE surveys, SISAB, ANS, ANVISA, variable dictionaries) consider healthbR first — see "Comparison with healthbR and microdatasus".
+'>
 <meta property="og:image" content="https://strategicprojects.github.io/datasusr/logo.svg">
 </head>
 <body>pkgdown/extra.css
@@ -46,13 +48,12 @@
 <li class="nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
-    <li><a class="dropdown-item" href="articles/getting-started.html">Getting started with datasusr</a></li>
-    <li><a class="dropdown-item" href="articles/data-sources.html">Available data sources</a></li>
+<li><a class="dropdown-item" href="articles/getting-started.html">Getting started</a></li>
+    <li><a class="dropdown-item" href="articles/data-sources.html">Data sources</a></li>
     <li><a class="dropdown-item" href="articles/cache-and-downloads.html">Cache and downloads</a></li>
     <li><a class="dropdown-item" href="articles/performance-notes.html">Performance notes</a></li>
-    <li><a class="dropdown-item" href="articles/comparison.html">Comparison with microdatasus</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="articles/comparison.html">Comparison with healthbR and microdatasus</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="news/index.html">Changelog</a></li>
@@ -77,6 +78,9 @@
 <!-- badges: start -->
 
 <p><strong>datasusr</strong> provides fast, in-memory reading of DATASUS <code>.dbc</code> files and a complete workflow for discovering, downloading, caching, and reading Brazilian public health data from the DATASUS FTP.</p>
+<blockquote>
+<p><strong>Looking for a broader toolkit?</strong> If your workflow goes beyond the DATASUS FTP — e.g. you also need IBGE surveys (VIGITEL, PNS, PNAD-C, POF, Censo), SISAB primary-care indicators, ANS, ANVISA, or out-of-the-box variable dictionaries and value labels — <a href="https://github.com/SidneyBissoli/healthbR" class="external-link"><code>healthbR</code></a> is the more complete and currently more active package, and is the recommended first choice in many cases. <code>datasusr</code> focuses on being a small, fast, dependency-light reader for raw DBC files plus a catalog and FTP layer. See the <a href="https://strategicprojects.github.io/datasusr/articles/comparison.html">Comparison article</a> for the full breakdown.</p>
+</blockquote>
 <table class="table important-banner"><tr>
 <td>
 ❕️ <strong class="important-title">Disclaimer</strong><br> This package is an independent, community-maintained tool that accesses publicly available data files from the DATASUS FTP server (<code><a href="ftp://ftp.datasus.gov.br" class="uri">ftp://ftp.datasus.gov.br</a></code>). It is <strong>not affiliated with</strong> the Brazilian Ministry of Health, DATASUS, or any government entity. To maintain consistency with R package development standards, all functions use English names (e.g. <code><a href="reference/datasus_fetch.html">datasus_fetch()</a></code>, <code><a href="reference/datasus_sources.html">datasus_sources()</a></code>). However, because the source data is produced by Brazilian government systems, <strong>parameter values</strong> use official DATASUS codes in Portuguese (e.g. <code>source = “SIHSUS”</code>, <code>uf = “PE”</code>), and <strong>column names</strong> in the returned tibbles reflect the original DBC/DBF field names (e.g. <code>uf_zi</code>, <code>ano_cmpt</code>, <code>munic_res</code>, <code>val_tot</code>). For reference on the original data layouts and field descriptions, use <code><a href="reference/datasus_docs_url.html">datasus_docs_url()</a></code> or see the <a href="https://datasus.saude.gov.br" class="external-link">official DATASUS documentation</a>.

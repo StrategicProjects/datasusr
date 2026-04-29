@@ -1,8 +1,8 @@
 ---
-title: "Comparison with microdatasus"
+title: "Comparison with healthbR and microdatasus"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Comparison with microdatasus}
+  %\VignetteIndexEntry{Comparison with healthbR and microdatasus}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -11,184 +11,218 @@ vignette: >
 knitr::opts_chunk$set(collapse = TRUE, comment = "#>", eval = FALSE)
 ```
 
-The [`microdatasus`](https://github.com/rfsaldanha/microdatasus) package
-(Saldanha, Bastos & Barcellos, 2019) is the most widely used R package for
-downloading and pre-processing DATASUS microdata. This article compares it
-with `datasusr` to help you choose the right tool for your workflow.
+`datasusr` is one of several R packages that pull Brazilian public health
+data into the tidyverse. This article compares it with the two most
+relevant alternatives so that you can pick the right tool — and, in many
+cases, that tool will *not* be `datasusr`.
+
+- [`healthbR`](https://github.com/SidneyBissoli/healthbR) (Sidney Bissoli):
+  modern, broad-scope toolkit covering DATASUS *and* IBGE surveys,
+  primary-care indicators, ANS, and ANVISA, with module-specific helpers,
+  variable dictionaries, parallel downloads, and Parquet caching.
+- [`microdatasus`](https://github.com/rfsaldanha/microdatasus)
+  (Saldanha, Bastos & Barcellos, 2019): the original tidyverse-friendly
+  DATASUS reader, with rich `process_*()` functions for variable labelling.
+  Currently archived on CRAN.
+
+## TL;DR — when to use what
+
+**Reach for `healthbR` first** when you want analysis-ready data and your
+question spans more than the DATASUS FTP. It covers VIGITEL, PNS, PNAD
+Contínua, POF, Censo, SI-PNI (microdata 2020+), SISAB, ANS, and ANVISA
+in addition to SIM/SINASC/SIH/SIA/SINAN/CNES, exposes a uniform
+`<module>_data()` / `<module>_variables()` / `<module>_dictionary()` API,
+filters by ICD-10 prefix at the call site, parallelises downloads via
+`future`/`furrr`, and caches as Parquet via `arrow`. For most applied
+public-health analyses this is the most productive starting point.
+
+**Use `datasusr`** when you specifically need a small, fast,
+dependency-light reader for raw DBC files from the DATASUS FTP, a
+persistent on-disk cache with age/size pruning, or low-level access to
+the FTP catalog (custom paths, custom file types, custom column types).
+It does *not* try to replace `healthbR`'s breadth or `microdatasus`'s
+variable-labelling features — it stays focused on fast I/O and the FTP.
+
+**Use `microdatasus`** when you want its `process_sim()` /
+`process_sinasc()` / etc. labelling pipelines for SIM/SINASC/SIH/SIA/CNES
+and a select set of SINAN diseases, in a workflow you already know.
 
 ## Feature comparison
 
-| Feature | datasusr | microdatasus |
-|---|---|---|
-| **DBC reading** | In-memory C parser (bundled) | Via `read.dbc` (external dep) |
-| **Column selection at read** | Yes (`select`) | Yes (`vars`) |
-| **Type control** | Yes (`col_types`, `guess_types`) | No |
-| **Date parsing at read** | Yes (`parse_dates`) | Via `process_*()` post-hoc |
-| **Column names** | snake\_case by default (`clean_names`) | Uppercase (original) |
-| **Return type** | Always tibble | tibble (after `process_*()`) |
-| **Data sources** | 18 systems catalogued | ~15 systems |
-| **Catalog browsing** | Yes (`datasus_sources()`, `datasus_file_types()`) | No |
-| **FTP file listing** | Yes (`datasus_list_files()`, `datasus_ftp_ls()`) | No |
-| **Persistent cache** | Yes (configurable dir, env var, pruning) | Session-level temp files |
-| **Parallel downloads** | Yes (`curl::multi_download`, progress bars) | Sequential |
-| **Territorial tables** | Yes (`datasus_get_territory()`) | No |
-| **Documentation paths** | Yes (`datasus_docs_url()`) | No |
-| **Variable labelling** | No | Yes (`process_*()` family) |
-| **One-step fetch** | Yes (`datasus_fetch()`) | Yes (`fetch_datasus()`) |
-| **Preliminary data** | Yes (`include_prelim` flag) | Yes (e.g. `"SIM-DO-PRELIM"`) |
-| **CRAN** | GitHub | Archived (dep on archived `read.dbc`) |
-| **License** | MIT | MIT |
+| Feature | datasusr | healthbR | microdatasus |
+|---|---|---|---|
+| **Data sources** | DATASUS FTP only (18 systems catalogued) | DATASUS FTP + IBGE surveys + SISAB + ANS + ANVISA | DATASUS FTP only (~15 systems) |
+| **Survey microdata** (VIGITEL, PNS, PNAD-C, POF, Censo) | No | Yes | No |
+| **Regulatory data** (ANS, ANVISA) | No | Yes | No |
+| **Primary-care indicators** (SISAB) | No | Yes | No |
+| **DBC reading** | In-memory C parser (bundled `blast`) | Vendored C decompressor | External `read.dbc` |
+| **Module-specific API** | No (one generic `datasus_fetch()`) | Yes (`sim_data()`, `sih_data()`, …) | Yes (`fetch_datasus(information_system = "SIH-RD")`) |
+| **Variable dictionaries / labels** | No (raw fields) | Yes (`*_variables()`, `*_dictionary()`) | Yes (`process_*()` family) |
+| **Filter by ICD-10 prefix** | No (post-hoc with `dplyr`) | Yes (`cause = "I"`, `diagnosis = "J"`) | No |
+| **Parallel downloads** | `curl::multi_download` (sequential per call) | `future` / `furrr` plans | Sequential |
+| **Caching** | Persistent on disk, configurable, with `prune` by age/size | Per-module Parquet cache (via `arrow`) with `*_cache_status()` | Session-level temp files |
+| **Cache opt-in** | tempdir() default, persistent only on opt-in | Per-module helpers | None |
+| **Column selection at read** | Yes (`select`) | Module-dependent | Yes (`vars`) |
+| **Type control at read** | Yes (`col_types`, `guess_types`) | No | No |
+| **Date parsing at read** | Yes (`parse_dates`) | Module-dependent | Via `process_*()` |
+| **Return type** | Tibble, snake_case by default | Tibble, snake_case | Data frame → tibble after `process_*()` |
+| **CRAN status** | This submission | On CRAN | Archived |
+| **Dependencies** | cli, curl, dplyr, purrr, rlang, stringr, tibble, tidyr | + readr, jsonlite, foreign (Imports); arrow, furrr, future, survey, srvyr (Suggests) | foreign, read.dbc (archived) |
+| **License** | MIT | MIT | MIT |
 
 ## Reading DBC files
 
-Both packages ultimately use C code based on Mark Adler's `blast`
-decompressor for the PKWare DCL format used by DATASUS. The key difference
-is in how the decompressed data is handled:
+All three packages ultimately rely on Mark Adler's `blast` decompressor
+for the PKWare DCL format used by DATASUS. The differences are in *how*
+the decompressed data is materialised in R:
 
-**microdatasus** delegates reading to the `read.dbc` package, which
-decompresses the `.dbc` to a temporary `.dbf` file on disk, then calls
-`foreign::read.dbf()` to parse it into a `data.frame`. This two-step
-process involves disk I/O and inherits the type limitations of
-`foreign::read.dbf()` (all numeric fields become `double`).
+- **`microdatasus`** delegates to the `read.dbc` package, which writes a
+  temporary `.dbf` file and parses it with `foreign::read.dbf()`. All
+  numeric fields become `double`.
+- **`healthbR`** vendors its own C decompressor and parses fields into
+  tidy tibbles per module. Each `<module>_data()` call applies the
+  module's specific cleaning/labelling rules.
+- **`datasusr`** decompresses and parses entirely in memory in a single
+  C call. The compressed payload goes straight to a memory buffer and is
+  parsed field-by-field into pre-allocated R vectors, with optional
+  column selection, integer-vs-double inference, explicit `col_types`,
+  and date parsing — all at the C level. There are no temporary files
+  on disk.
 
-**datasusr** performs decompression and DBF parsing entirely in memory in a
-single C call. The compressed payload is decompressed directly into a memory
-buffer and parsed field-by-field into pre-allocated R vectors. This avoids
-temporary files and enables features like column selection, type inference,
-and date parsing at the C level. It also handles a wider range of DBC
-variants, including files with non-standard header terminators found in some
-CNES files.
+For a single large DBC file with column selection, `datasusr` is the
+fastest option. For a multi-source analysis touching surveys and
+DATASUS together, `healthbR`'s integrated workflow saves more wall time
+than the per-file speedup is worth.
 
-## Downloading and discovering data
+## API ergonomics
 
-Both packages provide a one-step function to download and read files:
+`healthbR` provides a uniform per-module API:
 
 ```{r}
-# --- datasusr -----------------------------------------------------------------
-library(datasusr)
-df <- datasus_fetch(
-  source = "SIHSUS", file_type = "RD",
-  year = 2024, month = 1:3, uf = "PE",
-  select = c("uf_zi", "ano_cmpt", "munic_res", "val_tot")
-)
+library(healthbR)
 
-# --- microdatasus -------------------------------------------------------------
-library(microdatasus)
-df <- fetch_datasus(
-  year_start = 2024, year_end = 2024,
-  month_start = 1, month_end = 3,
-  uf = "PE", information_system = "SIH-RD"
-)
-df <- process_sih(df)
+obitos    <- sim_data(year = 2022, uf = "AC")
+obitos_cv <- sim_data(year = 2022, uf = "AC", cause = "I")  # ICD-10 prefix
+nascidos  <- sinasc_data(year = 2022, uf = "AC")
+intern    <- sih_data(year = 2022, month = 1:6, uf = c("SP", "RJ"))
+ambul     <- sia_data(year = 2022, month = 1, uf = "AC", type = "AM")
+
+# Variable metadata and value labels
+sim_variables()
+sim_dictionary("SEXO")
 ```
 
-Where the packages differ in design:
-
-**microdatasus** uses a single function (`fetch_datasus()`) with all
-parameters upfront. The system name uses a hyphenated format
-(`"SIH-RD"`, `"SIM-DO"`, `"CNES-ST"`). Path construction is handled
-internally. This is simple and effective for common use cases.
-
-**datasusr** offers a layered API that can be used at any level of
-granularity:
+`datasusr` is intentionally one level lower. There is a single
+`datasus_fetch()` entry point, plus a layered API that exposes the
+catalog and the FTP:
 
 ```{r}
-# Browse what's available
+library(datasusr)
+
+# Browse the catalog
 datasus_sources()
 datasus_file_types(source = "SINAN")
 
-# Check which files exist on the FTP
+# Validate availability against the FTP
 files <- datasus_list_files(
   source = "SINAN", file_type = "DENG",
-  year = 2020:2024
+  year   = 2020:2024
 )
 
-# Download with parallel connections and progress bars
-downloads <- datasus_download(files)
+# Download with caching
+downloads <- datasus_download(files, cache_dir = tempdir())
 
-# Read with type control
+# Read with column selection and explicit types
 df <- read_datasus_dbc(
   downloads$local_file[[1]],
-  select    = c("dt_notific", "id_municip", "classi_fin"),
-  col_types = c(dt_notific = "date"),
+  select      = c("dt_notific", "id_municip", "classi_fin"),
+  col_types   = c(dt_notific = "date"),
   parse_dates = TRUE
 )
 ```
 
-Or use `datasus_fetch()` to do it all in one call, just like microdatasus.
+If you do not need that level of control, `datasus_fetch()` collapses
+the four steps above into one call, similar to `healthbR`'s
+`<module>_data()`.
 
-## Caching
+## Caching and parallelism
 
-**microdatasus** downloads files to a temporary directory (`tempdir()`).
-Files are not preserved between R sessions, so re-running the same query
-triggers a new download from the DATASUS FTP.
+`healthbR` writes per-module Parquet files (when `arrow` is installed)
+and exposes per-module cache helpers (`sim_cache_status()`,
+`sih_clear_cache()`, …). Parallel downloads are opt-in via a `future`
+plan, so a single call can pull many UFs/months/years at once.
 
-**datasusr** maintains a persistent cache directory that survives between
-sessions. Repeated calls with the same parameters reuse cached files
-without any network access. The cache location can be configured via the
-`DATASUSR_CACHE_DIR` environment variable, the `datasusr.cache_dir` R
-option, or the `cache_dir` argument. Management functions let you inspect,
-prune, or clear the cache:
+`datasusr` keeps the cache as raw `.dbc` files in a single configurable
+directory (default: a session-scoped subdirectory of `tempdir()`).
+Pruning is global rather than per-module:
 
 ```{r}
-datasus_cache_info()                         # summary
-datasus_cache_prune(older_than_days = 90)    # remove old files
-datasus_cache_prune(max_size_bytes = 5e9)    # cap total size
-datasus_cache_clear()                        # remove everything
+datasus_cache_info()
+datasus_cache_prune(older_than_days = 90)
+datasus_cache_prune(max_size_bytes  = 5 * 1024^3)
+datasus_cache_clear()
 ```
+
+If you want a persistent cross-session cache, point `cache_dir` (or
+the `DATASUSR_CACHE_DIR` env var, or the `datasusr.cache_dir` option)
+at a directory of your choice, e.g.
+`tools::R_user_dir("datasusr", "cache")`.
+
+`datasusr` does not bundle a parallel-download abstraction, but
+`datasus_list_files()` returns a tibble of URLs that you can hand to
+`curl::multi_download()` or your own `future_map()` if you need
+parallel I/O.
 
 ## Variable labelling
 
-This is where `microdatasus` provides significant added value. Its
-`process_*()` functions decode categorical fields by replacing numeric
-codes with human-readable labels. For example, `process_sim()` converts
-ICD-10 codes to descriptions, municipality codes to names, and numeric
-sex/race indicators to labelled factors. This is done for SIM, SINASC,
-SIH, SIA, CNES, and several SINAN diseases.
+Neither `datasusr` nor base R itself attaches semantic labels to
+DATASUS variables. `healthbR` and `microdatasus` both do, with
+different styles:
 
-`datasusr` does not perform variable labelling. It returns the raw values
-from the DBC files, leaving semantic interpretation to the analyst. If
-you need labelled variables, you can use the territorial tables as
-lookup references:
+- `healthbR`: per-module `*_variables()` and `*_dictionary()` return
+  tibbles describing each field and its categorical levels.
+- `microdatasus`: `process_sim()`, `process_sinasc()`, … rewrite the
+  data frame in place with decoded values.
+
+If you start in `datasusr`, you can join against the territorial tables
+to recover human-readable municipality / region names, but ICD codes,
+sex codes, race codes, etc. remain raw:
 
 ```{r}
 library(dplyr)
-
-municipios <- datasus_get_territory("tb_municip")
+mun <- datasus_get_territory("tb_municip", cache_dir = tempdir())
 
 df <- datasus_fetch(
   source = "SIM", file_type = "DO",
-  year = 2022, uf = "PE"
+  year = 2022, uf = "PE",
+  cache_dir = tempdir()
 ) |>
   left_join(
-    select(municipios, co_municip, ds_nome),
+    select(mun, co_municip, ds_nome),
     by = c("codmunocor" = "co_municip")
   )
 ```
 
-## CRAN availability
+For analyses where labelled variables matter, prefer `healthbR` (or
+`microdatasus`'s `process_*()` family).
 
-As of this writing, `microdatasus` has been archived from CRAN because it
-depends on `read.dbc`, which is also archived. Both remain installable
-from GitHub. `datasusr` is available on GitHub and has no dependency on
-either package — it bundles its own C code for DBC decompression.
+## Composing the packages
 
-## When to use which
+The packages are not mutually exclusive. A common pattern:
 
-**Choose `datasusr`** when you need:
+- Use `healthbR` as the default entry point for surveys and labelled
+  DATASUS data.
+- Drop down to `datasusr` when you need fast custom reads of arbitrary
+  DBC files, or when you want to navigate the FTP catalog directly
+  (`datasus_ftp_ls()`, `datasus_list_files()`, `datasus_docs_url()`).
+- Reach for `microdatasus::process_*()` if you already rely on its
+  labelling pipelines.
 
-- Fast reads of large DBC files with column selection and type control
-- Persistent caching to avoid re-downloading
-- Exploratory browsing of the DATASUS catalog and FTP
-- Parallel downloads with progress bars
-- Territorial reference tables (municipalities, health regions)
-- A tidyverse-native workflow with snake_case column names
+## Summary
 
-**Choose `microdatasus`** when you need:
-
-- Automatic variable labelling and categorical recoding
-- Analysis-ready data frames with minimal code
-- A well-documented, published package (Cad. Saude Publica, 2019)
-
-The two packages can also complement each other: use `datasusr` for fast,
-cached I/O and `microdatasus::process_*()` for post-processing when needed.
+`healthbR` is the most complete and currently the most actively
+maintained option for Brazilian public health data in R, and is the
+recommended starting point for most users. `datasusr` is a focused
+DATASUS-FTP reader and catalog tool: it shines when you need fast,
+flexible, dependency-light I/O against raw DBC files, but it does not
+try to match `healthbR`'s scope.

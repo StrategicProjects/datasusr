@@ -61,19 +61,38 @@ PKWare DCL decompression and DBF parsing. The function always returns a
 tibble and is designed to work well with the tidyverse.
 }
 \examples{
-\dontrun{
-# Basic read (column names in snake_case by default)
-x <- read_datasus_dbc("RDPE2401.dbc")
-# columns: uf_zi, ano_cmpt, val_tot, ...
-
-# Select works with either case
-x <- read_datasus_dbc(
-  "RDPE2401.dbc",
-  select = c("uf_zi", "ano_cmpt", "val_tot")
+\donttest{
+# The example downloads a small DATASUS file into tempdir() and reads it.
+# Skipped automatically if the FTP is unreachable.
+tmp <- file.path(tempdir(), "RDAC2401.dbc")
+url <- paste0(
+  "ftp://ftp.datasus.gov.br/dissemin/publicos/SIHSUS/200801_/Dados/",
+  "RDAC2401.dbc"
+)
+ok <- tryCatch(
+  {
+    utils::download.file(url, tmp, mode = "wb", quiet = TRUE)
+    TRUE
+  },
+  error = function(e) FALSE,
+  warning = function(w) FALSE
 )
 
-# Keep original uppercase names
-x <- read_datasus_dbc("RDPE2401.dbc", clean_names = FALSE)
-# columns: UF_ZI, ANO_CMPT, VAL_TOT, ...
+if (ok) {
+  # Basic read (column names in snake_case by default)
+  x <- read_datasus_dbc(tmp, verbose = FALSE)
+
+  # Select works with either case
+  x <- read_datasus_dbc(
+    tmp,
+    select = c("uf_zi", "ano_cmpt", "val_tot"),
+    verbose = FALSE
+  )
+
+  # Keep original uppercase names
+  x <- read_datasus_dbc(tmp, clean_names = FALSE, verbose = FALSE)
+
+  unlink(tmp)
+}
 }
 }

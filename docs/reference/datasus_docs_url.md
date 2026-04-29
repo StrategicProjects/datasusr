@@ -40,9 +40,15 @@ datasus_docs_url("CNES")
 #>   <chr>  <chr>                                                       
 #> 1 CNES   ftp://ftp.datasus.gov.br/dissemin/publicos/CNES/200508_/Doc/
 
-if (FALSE) { # \dontrun{
-# List documentation files for CNES
-docs <- datasus_docs_url("CNES")
-datasus_ftp_ls(docs$docs_url[[1]])
-} # }
+# \donttest{
+tryCatch({
+  # List documentation files for CNES (network required).
+  docs <- datasus_docs_url("CNES")
+  datasus_ftp_ls(docs$docs_url[[1]], verbose = FALSE)
+}, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
+#> # A tibble: 1 × 2
+#>   ftp_url                                                      entry           
+#>   <chr>                                                        <chr>           
+#> 1 ftp://ftp.datasus.gov.br/dissemin/publicos/CNES/200508_/Doc/ IT_CNES_1706.pdf
+# }
 ```

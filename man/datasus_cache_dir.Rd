@@ -15,7 +15,11 @@ A single path string.
 \description{
 Returns the active cache directory path. Checks, in order: the \code{cache_dir}
 argument, the \code{DATASUSR_CACHE_DIR} environment variable, the
-\code{datasusr.cache_dir} option, and finally the default user cache directory.
+\code{datasusr.cache_dir} option, and finally a session-scoped subdirectory of
+\code{\link[=tempdir]{tempdir()}}. To opt in to a persistent cache across sessions, set the
+\code{DATASUSR_CACHE_DIR} environment variable, the \code{datasusr.cache_dir} option,
+or pass \code{cache_dir} explicitly (for example,
+\code{tools::R_user_dir("datasusr", "cache")}).
 }
 \examples{
 datasus_cache_dir()

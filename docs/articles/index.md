@@ -10,5 +10,8 @@
   downloads](https://strategicprojects.github.io/datasusr/articles/cache-and-downloads.md):
 - [Performance
   notes](https://strategicprojects.github.io/datasusr/articles/performance-notes.md):
-- [Comparison with
+
+### Choosing a package
+
+- [Comparison with healthbR and
   microdatasus](https://strategicprojects.github.io/datasusr/articles/comparison.md):

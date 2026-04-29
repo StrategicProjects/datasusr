@@ -48,11 +48,18 @@ Downloads one or many DATASUS files. When \code{use_cache = TRUE}, files that
 already exist in the cache directory are reused instead of re-downloaded.
 }
 \examples{
-\dontrun{
-files <- datasus_list_files(
-  source = "SIHSUS", file_type = "RD",
-  year = 2024, month = 1, uf = "PE"
-)
-downloads <- datasus_download(files)
+\donttest{
+tryCatch({
+  files <- datasus_list_files(
+    source = "SIHSUS", file_type = "RD",
+    year = 2024, month = 1, uf = "AC",
+    verbose = FALSE
+  )
+  downloads <- datasus_download(
+    files,
+    cache_dir = tempdir(),
+    verbose   = FALSE
+  )
+}, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 }
 }

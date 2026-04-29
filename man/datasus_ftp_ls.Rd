@@ -23,7 +23,10 @@ A tibble with columns \code{ftp_url} and \code{entry}.
 Fetches a raw directory listing from a DATASUS FTP path.
 }
 \examples{
-\dontrun{
-datasus_ftp_ls("SIHSUS/200801_/Dados/")
+\donttest{
+tryCatch(
+  datasus_ftp_ls("SIHSUS/200801_/Dados/", verbose = FALSE),
+  error = function(e) message("FTP unavailable: ", conditionMessage(e))
+)
 }
 }

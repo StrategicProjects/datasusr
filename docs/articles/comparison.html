@@ -5,7 +5,7 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-<title>Comparison with microdatasus • datasusr</title>
+<title>Comparison with healthbR and microdatasus • datasusr</title>
 <!-- favicons --><link rel="icon" type="image/png" sizes="96x96" href="../favicon-96x96.png">
 <link rel="icon" type="”image/svg+xml”" href="../favicon.svg">
 <link rel="apple-touch-icon" sizes="180x180" href="../apple-touch-icon.png">
@@ -16,7 +16,7 @@
 <script src="../deps/bootstrap-5.3.1/bootstrap.bundle.min.js"></script><link href="../deps/font-awesome-6.5.2/css/all.min.css" rel="stylesheet">
 <link href="../deps/font-awesome-6.5.2/css/v4-shims.min.css" rel="stylesheet">
 <script src="../deps/headroom-0.11.0/headroom.min.js"></script><script src="../deps/headroom-0.11.0/jQuery.headroom.min.js"></script><script src="../deps/bootstrap-toc-1.0.1/bootstrap-toc.min.js"></script><script src="../deps/clipboard.js-2.0.11/clipboard.min.js"></script><script src="../deps/search-1.0.0/autocomplete.jquery.min.js"></script><script src="../deps/search-1.0.0/fuse.min.js"></script><script src="../deps/search-1.0.0/mark.min.js"></script><!-- pkgdown --><script src="../pkgdown.js"></script><link href="../extra.css" rel="stylesheet">
-<meta property="og:title" content="Comparison with microdatasus">
+<meta property="og:title" content="Comparison with healthbR and microdatasus">
 </head>
 <body>pkgdown/extra.css
 
@@ -43,13 +43,12 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with datasusr</a></li>
-    <li><a class="dropdown-item" href="../articles/data-sources.html">Available data sources</a></li>
+<li><a class="dropdown-item" href="../articles/getting-started.html">Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/data-sources.html">Data sources</a></li>
     <li><a class="dropdown-item" href="../articles/cache-and-downloads.html">Cache and downloads</a></li>
     <li><a class="dropdown-item" href="../articles/performance-notes.html">Performance notes</a></li>
-    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with microdatasus</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with healthbR and microdatasus</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -71,7 +70,7 @@
 
 <div class="row">
   <main id="main" class="col-md-9"><div class="page-header">
-      <img src="../logo.svg" class="logo" alt=""><h1>Comparison with microdatasus</h1>
+      <img src="../logo.svg" class="logo" alt=""><h1>Comparison with healthbR and microdatasus</h1>
             
       
       <small class="dont-index">Source: <a href="https://github.com/StrategicProjects/datasusr/blob/HEAD/vignettes/comparison.Rmd" class="external-link"><code>vignettes/comparison.Rmd</code></a></small>
@@ -80,115 +79,187 @@
 
     
     
-<p>The <a href="https://github.com/rfsaldanha/microdatasus" class="external-link"><code>microdatasus</code></a>
-package (Saldanha, Bastos &amp; Barcellos, 2019) is the most widely used
-R package for downloading and pre-processing DATASUS microdata. This
-article compares it with <code>datasusr</code> to help you choose the
-right tool for your workflow.</p>
+<p><code>datasusr</code> is one of several R packages that pull
+Brazilian public health data into the tidyverse. This article compares
+it with the two most relevant alternatives so that you can pick the
+right tool — and, in many cases, that tool will <em>not</em> be
+<code>datasusr</code>.</p>
+<ul>
+<li>
+<a href="https://github.com/SidneyBissoli/healthbR" class="external-link"><code>healthbR</code></a>
+(Sidney Bissoli): modern, broad-scope toolkit covering DATASUS
+<em>and</em> IBGE surveys, primary-care indicators, ANS, and ANVISA,
+with module-specific helpers, variable dictionaries, parallel downloads,
+and Parquet caching.</li>
+<li>
+<a href="https://github.com/rfsaldanha/microdatasus" class="external-link"><code>microdatasus</code></a>
+(Saldanha, Bastos &amp; Barcellos, 2019): the original
+tidyverse-friendly DATASUS reader, with rich <code>process_*()</code>
+functions for variable labelling. Currently archived on CRAN.</li>
+</ul>
+<div class="section level2">
+<h2 id="tldr-when-to-use-what">TL;DR — when to use what<a class="anchor" aria-label="anchor" href="#tldr-when-to-use-what"></a>
+</h2>
+<p><strong>Reach for <code>healthbR</code> first</strong> when you want
+analysis-ready data and your question spans more than the DATASUS FTP.
+It covers VIGITEL, PNS, PNAD Contínua, POF, Censo, SI-PNI (microdata
+2020+), SISAB, ANS, and ANVISA in addition to
+SIM/SINASC/SIH/SIA/SINAN/CNES, exposes a uniform
+<code>&lt;module&gt;_data()</code> /
+<code>&lt;module&gt;_variables()</code> /
+<code>&lt;module&gt;_dictionary()</code> API, filters by ICD-10 prefix
+at the call site, parallelises downloads via
+<code>future</code>/<code>furrr</code>, and caches as Parquet via
+<code>arrow</code>. For most applied public-health analyses this is the
+most productive starting point.</p>
+<p><strong>Use <code>datasusr</code></strong> when you specifically need
+a small, fast, dependency-light reader for raw DBC files from the
+DATASUS FTP, a persistent on-disk cache with age/size pruning, or
+low-level access to the FTP catalog (custom paths, custom file types,
+custom column types). It does <em>not</em> try to replace
+<code>healthbR</code>’s breadth or <code>microdatasus</code>’s
+variable-labelling features — it stays focused on fast I/O and the
+FTP.</p>
+<p><strong>Use <code>microdatasus</code></strong> when you want its
+<code>process_sim()</code> / <code>process_sinasc()</code> / etc.
+labelling pipelines for SIM/SINASC/SIH/SIA/CNES and a select set of
+SINAN diseases, in a workflow you already know.</p>
+</div>
 <div class="section level2">
 <h2 id="feature-comparison">Feature comparison<a class="anchor" aria-label="anchor" href="#feature-comparison"></a>
 </h2>
 <table class="table">
 <colgroup>
-<col width="33%">
-<col width="33%">
-<col width="33%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
+<col width="25%">
 </colgroup>
 <thead><tr class="header">
 <th>Feature</th>
 <th>datasusr</th>
+<th>healthbR</th>
 <th>microdatasus</th>
 </tr></thead>
 <tbody>
 <tr class="odd">
+<td><strong>Data sources</strong></td>
+<td>DATASUS FTP only (18 systems catalogued)</td>
+<td>DATASUS FTP + IBGE surveys + SISAB + ANS + ANVISA</td>
+<td>DATASUS FTP only (~15 systems)</td>
+</tr>
+<tr class="even">
+<td>
+<strong>Survey microdata</strong> (VIGITEL, PNS, PNAD-C, POF,
+Censo)</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td>
+<strong>Regulatory data</strong> (ANS, ANVISA)</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="even">
+<td>
+<strong>Primary-care indicators</strong> (SISAB)</td>
+<td>No</td>
+<td>Yes</td>
+<td>No</td>
+</tr>
+<tr class="odd">
 <td><strong>DBC reading</strong></td>
-<td>In-memory C parser (bundled)</td>
-<td>Via <code>read.dbc</code> (external dep)</td>
+<td>In-memory C parser (bundled <code>blast</code>)</td>
+<td>Vendored C decompressor</td>
+<td>External <code>read.dbc</code>
+</td>
+</tr>
+<tr class="even">
+<td><strong>Module-specific API</strong></td>
+<td>No (one generic <code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code>)</td>
+<td>Yes (<code>sim_data()</code>, <code>sih_data()</code>, …)</td>
+<td>Yes (<code>fetch_datasus(information_system = "SIH-RD")</code>)</td>
+</tr>
+<tr class="odd">
+<td><strong>Variable dictionaries / labels</strong></td>
+<td>No (raw fields)</td>
+<td>Yes (<code>*_variables()</code>, <code>*_dictionary()</code>)</td>
+<td>Yes (<code>process_*()</code> family)</td>
+</tr>
+<tr class="even">
+<td><strong>Filter by ICD-10 prefix</strong></td>
+<td>No (post-hoc with <code>dplyr</code>)</td>
+<td>Yes (<code>cause = "I"</code>, <code>diagnosis = "J"</code>)</td>
+<td>No</td>
+</tr>
+<tr class="odd">
+<td><strong>Parallel downloads</strong></td>
+<td>
+<code><a href="https://jeroen.r-universe.dev/curl/reference/multi_download.html" class="external-link">curl::multi_download</a></code> (sequential per call)</td>
+<td>
+<code>future</code> / <code>furrr</code> plans</td>
+<td>Sequential</td>
+</tr>
+<tr class="even">
+<td><strong>Caching</strong></td>
+<td>Persistent on disk, configurable, with <code>prune</code> by
+age/size</td>
+<td>Per-module Parquet cache (via <code>arrow</code>) with
+<code>*_cache_status()</code>
+</td>
+<td>Session-level temp files</td>
+</tr>
+<tr class="odd">
+<td><strong>Cache opt-in</strong></td>
+<td>tempdir() default, persistent only on opt-in</td>
+<td>Per-module helpers</td>
+<td>None</td>
 </tr>
 <tr class="even">
 <td><strong>Column selection at read</strong></td>
 <td>Yes (<code>select</code>)</td>
+<td>Module-dependent</td>
 <td>Yes (<code>vars</code>)</td>
 </tr>
 <tr class="odd">
-<td><strong>Type control</strong></td>
+<td><strong>Type control at read</strong></td>
 <td>Yes (<code>col_types</code>, <code>guess_types</code>)</td>
+<td>No</td>
 <td>No</td>
 </tr>
 <tr class="even">
 <td><strong>Date parsing at read</strong></td>
 <td>Yes (<code>parse_dates</code>)</td>
-<td>Via <code>process_*()</code> post-hoc</td>
+<td>Module-dependent</td>
+<td>Via <code>process_*()</code>
+</td>
 </tr>
 <tr class="odd">
-<td><strong>Column names</strong></td>
-<td>snake_case by default (<code>clean_names</code>)</td>
-<td>Uppercase (original)</td>
-</tr>
-<tr class="even">
 <td><strong>Return type</strong></td>
-<td>Always tibble</td>
-<td>tibble (after <code>process_*()</code>)</td>
-</tr>
-<tr class="odd">
-<td><strong>Data sources</strong></td>
-<td>18 systems catalogued</td>
-<td>~15 systems</td>
+<td>Tibble, snake_case by default</td>
+<td>Tibble, snake_case</td>
+<td>Data frame → tibble after <code>process_*()</code>
+</td>
 </tr>
 <tr class="even">
-<td><strong>Catalog browsing</strong></td>
-<td>Yes (<code><a href="../reference/datasus_sources.html">datasus_sources()</a></code>,
-<code><a href="../reference/datasus_file_types.html">datasus_file_types()</a></code>)</td>
-<td>No</td>
+<td><strong>CRAN status</strong></td>
+<td>This submission</td>
+<td>On CRAN</td>
+<td>Archived</td>
 </tr>
 <tr class="odd">
-<td><strong>FTP file listing</strong></td>
-<td>Yes (<code><a href="../reference/datasus_list_files.html">datasus_list_files()</a></code>,
-<code><a href="../reference/datasus_ftp_ls.html">datasus_ftp_ls()</a></code>)</td>
-<td>No</td>
-</tr>
-<tr class="even">
-<td><strong>Persistent cache</strong></td>
-<td>Yes (configurable dir, env var, pruning)</td>
-<td>Session-level temp files</td>
-</tr>
-<tr class="odd">
-<td><strong>Parallel downloads</strong></td>
-<td>Yes (<code><a href="https://jeroen.r-universe.dev/curl/reference/multi_download.html" class="external-link">curl::multi_download</a></code>, progress bars)</td>
-<td>Sequential</td>
-</tr>
-<tr class="even">
-<td><strong>Territorial tables</strong></td>
-<td>Yes (<code><a href="../reference/datasus_get_territory.html">datasus_get_territory()</a></code>)</td>
-<td>No</td>
-</tr>
-<tr class="odd">
-<td><strong>Documentation paths</strong></td>
-<td>Yes (<code><a href="../reference/datasus_docs_url.html">datasus_docs_url()</a></code>)</td>
-<td>No</td>
-</tr>
-<tr class="even">
-<td><strong>Variable labelling</strong></td>
-<td>No</td>
-<td>Yes (<code>process_*()</code> family)</td>
-</tr>
-<tr class="odd">
-<td><strong>One-step fetch</strong></td>
-<td>Yes (<code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code>)</td>
-<td>Yes (<code>fetch_datasus()</code>)</td>
-</tr>
-<tr class="even">
-<td><strong>Preliminary data</strong></td>
-<td>Yes (<code>include_prelim</code> flag)</td>
-<td>Yes (e.g. <code>"SIM-DO-PRELIM"</code>)</td>
-</tr>
-<tr class="odd">
-<td><strong>CRAN</strong></td>
-<td>GitHub</td>
-<td>Archived (dep on archived <code>read.dbc</code>)</td>
+<td><strong>Dependencies</strong></td>
+<td>cli, curl, dplyr, purrr, rlang, stringr, tibble, tidyr</td>
+<td>+ readr, jsonlite, foreign (Imports); arrow, furrr, future, survey,
+srvyr (Suggests)</td>
+<td>foreign, read.dbc (archived)</td>
 </tr>
 <tr class="even">
 <td><strong>License</strong></td>
+<td>MIT</td>
 <td>MIT</td>
 <td>MIT</td>
 </tr>
@@ -198,160 +269,169 @@ right tool for your workflow.</p>
 <div class="section level2">
 <h2 id="reading-dbc-files">Reading DBC files<a class="anchor" aria-label="anchor" href="#reading-dbc-files"></a>
 </h2>
-<p>Both packages ultimately use C code based on Mark Adler’s
-<code>blast</code> decompressor for the PKWare DCL format used by
-DATASUS. The key difference is in how the decompressed data is
-handled:</p>
-<p><strong>microdatasus</strong> delegates reading to the
-<code>read.dbc</code> package, which decompresses the <code>.dbc</code>
-to a temporary <code>.dbf</code> file on disk, then calls
-<code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code> to parse it into a
-<code>data.frame</code>. This two-step process involves disk I/O and
-inherits the type limitations of <code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code> (all
-numeric fields become <code>double</code>).</p>
-<p><strong>datasusr</strong> performs decompression and DBF parsing
-entirely in memory in a single C call. The compressed payload is
-decompressed directly into a memory buffer and parsed field-by-field
-into pre-allocated R vectors. This avoids temporary files and enables
-features like column selection, type inference, and date parsing at the
-C level. It also handles a wider range of DBC variants, including files
-with non-standard header terminators found in some CNES files.</p>
+<p>All three packages ultimately rely on Mark Adler’s <code>blast</code>
+decompressor for the PKWare DCL format used by DATASUS. The differences
+are in <em>how</em> the decompressed data is materialised in R:</p>
+<ul>
+<li>
+<strong><code>microdatasus</code></strong> delegates to the
+<code>read.dbc</code> package, which writes a temporary
+<code>.dbf</code> file and parses it with
+<code><a href="https://rdrr.io/pkg/foreign/man/read.dbf.html" class="external-link">foreign::read.dbf()</a></code>. All numeric fields become
+<code>double</code>.</li>
+<li>
+<strong><code>healthbR</code></strong> vendors its own C
+decompressor and parses fields into tidy tibbles per module. Each
+<code>&lt;module&gt;_data()</code> call applies the module’s specific
+cleaning/labelling rules.</li>
+<li>
+<strong><code>datasusr</code></strong> decompresses and parses
+entirely in memory in a single C call. The compressed payload goes
+straight to a memory buffer and is parsed field-by-field into
+pre-allocated R vectors, with optional column selection,
+integer-vs-double inference, explicit <code>col_types</code>, and date
+parsing — all at the C level. There are no temporary files on disk.</li>
+</ul>
+<p>For a single large DBC file with column selection,
+<code>datasusr</code> is the fastest option. For a multi-source analysis
+touching surveys and DATASUS together, <code>healthbR</code>’s
+integrated workflow saves more wall time than the per-file speedup is
+worth.</p>
 </div>
 <div class="section level2">
-<h2 id="downloading-and-discovering-data">Downloading and discovering data<a class="anchor" aria-label="anchor" href="#downloading-and-discovering-data"></a>
+<h2 id="api-ergonomics">API ergonomics<a class="anchor" aria-label="anchor" href="#api-ergonomics"></a>
 </h2>
-<p>Both packages provide a one-step function to download and read
-files:</p>
+<p><code>healthbR</code> provides a uniform per-module API:</p>
 <div class="sourceCode" id="cb1"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># --- datasusr -----------------------------------------------------------------</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://strategicprojects.github.io/datasusr/">datasusr</a></span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_fetch.html">datasus_fetch</a></span><span class="op">(</span></span>
-<span>  source <span class="op">=</span> <span class="st">"SIHSUS"</span>, file_type <span class="op">=</span> <span class="st">"RD"</span>,</span>
-<span>  year <span class="op">=</span> <span class="fl">2024</span>, month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">3</span>, uf <span class="op">=</span> <span class="st">"PE"</span>,</span>
-<span>  select <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"uf_zi"</span>, <span class="st">"ano_cmpt"</span>, <span class="st">"munic_res"</span>, <span class="st">"val_tot"</span><span class="op">)</span></span>
-<span><span class="op">)</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://github.com/SidneyBissoli/healthbR" class="external-link">healthbR</a></span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># --- microdatasus -------------------------------------------------------------</span></span>
-<span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va">microdatasus</span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">fetch_datasus</span><span class="op">(</span></span>
-<span>  year_start <span class="op">=</span> <span class="fl">2024</span>, year_end <span class="op">=</span> <span class="fl">2024</span>,</span>
-<span>  month_start <span class="op">=</span> <span class="fl">1</span>, month_end <span class="op">=</span> <span class="fl">3</span>,</span>
-<span>  uf <span class="op">=</span> <span class="st">"PE"</span>, information_system <span class="op">=</span> <span class="st">"SIH-RD"</span></span>
-<span><span class="op">)</span></span>
-<span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu">process_sih</span><span class="op">(</span><span class="va">df</span><span class="op">)</span></span></code></pre></div>
-<p>Where the packages differ in design:</p>
-<p><strong>microdatasus</strong> uses a single function
-(<code>fetch_datasus()</code>) with all parameters upfront. The system
-name uses a hyphenated format (<code>"SIH-RD"</code>,
-<code>"SIM-DO"</code>, <code>"CNES-ST"</code>). Path construction is
-handled internally. This is simple and effective for common use
-cases.</p>
-<p><strong>datasusr</strong> offers a layered API that can be used at
-any level of granularity:</p>
+<span><span class="va">obitos</span>    <span class="op">&lt;-</span> <span class="fu">sim_data</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"AC"</span><span class="op">)</span></span>
+<span><span class="va">obitos_cv</span> <span class="op">&lt;-</span> <span class="fu">sim_data</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"AC"</span>, cause <span class="op">=</span> <span class="st">"I"</span><span class="op">)</span>  <span class="co"># ICD-10 prefix</span></span>
+<span><span class="va">nascidos</span>  <span class="op">&lt;-</span> <span class="fu">sinasc_data</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"AC"</span><span class="op">)</span></span>
+<span><span class="va">intern</span>    <span class="op">&lt;-</span> <span class="fu">sih_data</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2022</span>, month <span class="op">=</span> <span class="fl">1</span><span class="op">:</span><span class="fl">6</span>, uf <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"SP"</span>, <span class="st">"RJ"</span><span class="op">)</span><span class="op">)</span></span>
+<span><span class="va">ambul</span>     <span class="op">&lt;-</span> <span class="fu">sia_data</span><span class="op">(</span>year <span class="op">=</span> <span class="fl">2022</span>, month <span class="op">=</span> <span class="fl">1</span>, uf <span class="op">=</span> <span class="st">"AC"</span>, type <span class="op">=</span> <span class="st">"AM"</span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Variable metadata and value labels</span></span>
+<span><span class="fu">sim_variables</span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu">sim_dictionary</span><span class="op">(</span><span class="st">"SEXO"</span><span class="op">)</span></span></code></pre></div>
+<p><code>datasusr</code> is intentionally one level lower. There is a
+single <code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code> entry point, plus a layered API that
+exposes the catalog and the FTP:</p>
 <div class="sourceCode" id="cb2"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="co"># Browse what's available</span></span>
+<code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://strategicprojects.github.io/datasusr/">datasusr</a></span><span class="op">)</span></span>
+<span></span>
+<span><span class="co"># Browse the catalog</span></span>
 <span><span class="fu"><a href="../reference/datasus_sources.html">datasus_sources</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="fu"><a href="../reference/datasus_file_types.html">datasus_file_types</a></span><span class="op">(</span>source <span class="op">=</span> <span class="st">"SINAN"</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Check which files exist on the FTP</span></span>
+<span><span class="co"># Validate availability against the FTP</span></span>
 <span><span class="va">files</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_list_files.html">datasus_list_files</a></span><span class="op">(</span></span>
 <span>  source <span class="op">=</span> <span class="st">"SINAN"</span>, file_type <span class="op">=</span> <span class="st">"DENG"</span>,</span>
-<span>  year <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span></span>
+<span>  year   <span class="op">=</span> <span class="fl">2020</span><span class="op">:</span><span class="fl">2024</span></span>
 <span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Download with parallel connections and progress bars</span></span>
-<span><span class="va">downloads</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_download.html">datasus_download</a></span><span class="op">(</span><span class="va">files</span><span class="op">)</span></span>
+<span><span class="co"># Download with caching</span></span>
+<span><span class="va">downloads</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_download.html">datasus_download</a></span><span class="op">(</span><span class="va">files</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
-<span><span class="co"># Read with type control</span></span>
+<span><span class="co"># Read with column selection and explicit types</span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/read_datasus_dbc.html">read_datasus_dbc</a></span><span class="op">(</span></span>
 <span>  <span class="va">downloads</span><span class="op">$</span><span class="va">local_file</span><span class="op">[[</span><span class="fl">1</span><span class="op">]</span><span class="op">]</span>,</span>
-<span>  select    <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dt_notific"</span>, <span class="st">"id_municip"</span>, <span class="st">"classi_fin"</span><span class="op">)</span>,</span>
-<span>  col_types <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dt_notific <span class="op">=</span> <span class="st">"date"</span><span class="op">)</span>,</span>
+<span>  select      <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"dt_notific"</span>, <span class="st">"id_municip"</span>, <span class="st">"classi_fin"</span><span class="op">)</span>,</span>
+<span>  col_types   <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span>dt_notific <span class="op">=</span> <span class="st">"date"</span><span class="op">)</span>,</span>
 <span>  parse_dates <span class="op">=</span> <span class="cn">TRUE</span></span>
 <span><span class="op">)</span></span></code></pre></div>
-<p>Or use <code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code> to do it all in one call, just
-like microdatasus.</p>
+<p>If you do not need that level of control,
+<code><a href="../reference/datasus_fetch.html">datasus_fetch()</a></code> collapses the four steps above into one
+call, similar to <code>healthbR</code>’s
+<code>&lt;module&gt;_data()</code>.</p>
 </div>
 <div class="section level2">
-<h2 id="caching">Caching<a class="anchor" aria-label="anchor" href="#caching"></a>
+<h2 id="caching-and-parallelism">Caching and parallelism<a class="anchor" aria-label="anchor" href="#caching-and-parallelism"></a>
 </h2>
-<p><strong>microdatasus</strong> downloads files to a temporary
-directory (<code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>). Files are not preserved between R
-sessions, so re-running the same query triggers a new download from the
-DATASUS FTP.</p>
-<p><strong>datasusr</strong> maintains a persistent cache directory that
-survives between sessions. Repeated calls with the same parameters reuse
-cached files without any network access. The cache location can be
-configured via the <code>DATASUSR_CACHE_DIR</code> environment variable,
-the <code>datasusr.cache_dir</code> R option, or the
-<code>cache_dir</code> argument. Management functions let you inspect,
-prune, or clear the cache:</p>
+<p><code>healthbR</code> writes per-module Parquet files (when
+<code>arrow</code> is installed) and exposes per-module cache helpers
+(<code>sim_cache_status()</code>, <code>sih_clear_cache()</code>, …).
+Parallel downloads are opt-in via a <code>future</code> plan, so a
+single call can pull many UFs/months/years at once.</p>
+<p><code>datasusr</code> keeps the cache as raw <code>.dbc</code> files
+in a single configurable directory (default: a session-scoped
+subdirectory of <code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code>). Pruning is global rather than
+per-module:</p>
 <div class="sourceCode" id="cb3"><pre class="downlit sourceCode r">
-<code class="sourceCode R"><span><span class="fu"><a href="../reference/datasus_cache_info.html">datasus_cache_info</a></span><span class="op">(</span><span class="op">)</span>                         <span class="co"># summary</span></span>
-<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>older_than_days <span class="op">=</span> <span class="fl">90</span><span class="op">)</span>    <span class="co"># remove old files</span></span>
-<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>max_size_bytes <span class="op">=</span> <span class="fl">5e9</span><span class="op">)</span>    <span class="co"># cap total size</span></span>
-<span><span class="fu"><a href="../reference/datasus_cache_clear.html">datasus_cache_clear</a></span><span class="op">(</span><span class="op">)</span>                        <span class="co"># remove everything</span></span></code></pre></div>
+<code class="sourceCode R"><span><span class="fu"><a href="../reference/datasus_cache_info.html">datasus_cache_info</a></span><span class="op">(</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>older_than_days <span class="op">=</span> <span class="fl">90</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_prune.html">datasus_cache_prune</a></span><span class="op">(</span>max_size_bytes  <span class="op">=</span> <span class="fl">5</span> <span class="op">*</span> <span class="fl">1024</span><span class="op">^</span><span class="fl">3</span><span class="op">)</span></span>
+<span><span class="fu"><a href="../reference/datasus_cache_clear.html">datasus_cache_clear</a></span><span class="op">(</span><span class="op">)</span></span></code></pre></div>
+<p>If you want a persistent cross-session cache, point
+<code>cache_dir</code> (or the <code>DATASUSR_CACHE_DIR</code> env var,
+or the <code>datasusr.cache_dir</code> option) at a directory of your
+choice, e.g. <code>tools::R_user_dir("datasusr", "cache")</code>.</p>
+<p><code>datasusr</code> does not bundle a parallel-download
+abstraction, but <code><a href="../reference/datasus_list_files.html">datasus_list_files()</a></code> returns a tibble of
+URLs that you can hand to <code><a href="https://jeroen.r-universe.dev/curl/reference/multi_download.html" class="external-link">curl::multi_download()</a></code> or your
+own <code>future_map()</code> if you need parallel I/O.</p>
 </div>
 <div class="section level2">
 <h2 id="variable-labelling">Variable labelling<a class="anchor" aria-label="anchor" href="#variable-labelling"></a>
 </h2>
-<p>This is where <code>microdatasus</code> provides significant added
-value. Its <code>process_*()</code> functions decode categorical fields
-by replacing numeric codes with human-readable labels. For example,
-<code>process_sim()</code> converts ICD-10 codes to descriptions,
-municipality codes to names, and numeric sex/race indicators to labelled
-factors. This is done for SIM, SINASC, SIH, SIA, CNES, and several SINAN
-diseases.</p>
-<p><code>datasusr</code> does not perform variable labelling. It returns
-the raw values from the DBC files, leaving semantic interpretation to
-the analyst. If you need labelled variables, you can use the territorial
-tables as lookup references:</p>
+<p>Neither <code>datasusr</code> nor base R itself attaches semantic
+labels to DATASUS variables. <code>healthbR</code> and
+<code>microdatasus</code> both do, with different styles:</p>
+<ul>
+<li>
+<code>healthbR</code>: per-module <code>*_variables()</code> and
+<code>*_dictionary()</code> return tibbles describing each field and its
+categorical levels.</li>
+<li>
+<code>microdatasus</code>: <code>process_sim()</code>,
+<code>process_sinasc()</code>, … rewrite the data frame in place with
+decoded values.</li>
+</ul>
+<p>If you start in <code>datasusr</code>, you can join against the
+territorial tables to recover human-readable municipality / region
+names, but ICD codes, sex codes, race codes, etc. remain raw:</p>
 <div class="sourceCode" id="cb4"><pre class="downlit sourceCode r">
 <code class="sourceCode R"><span><span class="kw"><a href="https://rdrr.io/r/base/library.html" class="external-link">library</a></span><span class="op">(</span><span class="va"><a href="https://dplyr.tidyverse.org" class="external-link">dplyr</a></span><span class="op">)</span></span>
-<span></span>
-<span><span class="va">municipios</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_get_territory.html">datasus_get_territory</a></span><span class="op">(</span><span class="st">"tb_municip"</span><span class="op">)</span></span>
+<span><span class="va">mun</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_get_territory.html">datasus_get_territory</a></span><span class="op">(</span><span class="st">"tb_municip"</span>, cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span><span class="op">)</span></span>
 <span></span>
 <span><span class="va">df</span> <span class="op">&lt;-</span> <span class="fu"><a href="../reference/datasus_fetch.html">datasus_fetch</a></span><span class="op">(</span></span>
 <span>  source <span class="op">=</span> <span class="st">"SIM"</span>, file_type <span class="op">=</span> <span class="st">"DO"</span>,</span>
-<span>  year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"PE"</span></span>
+<span>  year <span class="op">=</span> <span class="fl">2022</span>, uf <span class="op">=</span> <span class="st">"PE"</span>,</span>
+<span>  cache_dir <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir</a></span><span class="op">(</span><span class="op">)</span></span>
 <span><span class="op">)</span> <span class="op">|&gt;</span></span>
 <span>  <span class="fu"><a href="https://dplyr.tidyverse.org/reference/mutate-joins.html" class="external-link">left_join</a></span><span class="op">(</span></span>
-<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">municipios</span>, <span class="va">co_municip</span>, <span class="va">ds_nome</span><span class="op">)</span>,</span>
+<span>    <span class="fu"><a href="https://dplyr.tidyverse.org/reference/select.html" class="external-link">select</a></span><span class="op">(</span><span class="va">mun</span>, <span class="va">co_municip</span>, <span class="va">ds_nome</span><span class="op">)</span>,</span>
 <span>    by <span class="op">=</span> <span class="fu"><a href="https://rdrr.io/r/base/c.html" class="external-link">c</a></span><span class="op">(</span><span class="st">"codmunocor"</span> <span class="op">=</span> <span class="st">"co_municip"</span><span class="op">)</span></span>
 <span>  <span class="op">)</span></span></code></pre></div>
+<p>For analyses where labelled variables matter, prefer
+<code>healthbR</code> (or <code>microdatasus</code>’s
+<code>process_*()</code> family).</p>
 </div>
 <div class="section level2">
-<h2 id="cran-availability">CRAN availability<a class="anchor" aria-label="anchor" href="#cran-availability"></a>
+<h2 id="composing-the-packages">Composing the packages<a class="anchor" aria-label="anchor" href="#composing-the-packages"></a>
 </h2>
-<p>As of this writing, <code>microdatasus</code> has been archived from
-CRAN because it depends on <code>read.dbc</code>, which is also
-archived. Both remain installable from GitHub. <code>datasusr</code> is
-available on GitHub and has no dependency on either package — it bundles
-its own C code for DBC decompression.</p>
+<p>The packages are not mutually exclusive. A common pattern:</p>
+<ul>
+<li>Use <code>healthbR</code> as the default entry point for surveys and
+labelled DATASUS data.</li>
+<li>Drop down to <code>datasusr</code> when you need fast custom reads
+of arbitrary DBC files, or when you want to navigate the FTP catalog
+directly (<code><a href="../reference/datasus_ftp_ls.html">datasus_ftp_ls()</a></code>,
+<code><a href="../reference/datasus_list_files.html">datasus_list_files()</a></code>,
+<code><a href="../reference/datasus_docs_url.html">datasus_docs_url()</a></code>).</li>
+<li>Reach for <code>microdatasus::process_*()</code> if you already rely
+on its labelling pipelines.</li>
+</ul>
 </div>
 <div class="section level2">
-<h2 id="when-to-use-which">When to use which<a class="anchor" aria-label="anchor" href="#when-to-use-which"></a>
+<h2 id="summary">Summary<a class="anchor" aria-label="anchor" href="#summary"></a>
 </h2>
-<p><strong>Choose <code>datasusr</code></strong> when you need:</p>
-<ul>
-<li>Fast reads of large DBC files with column selection and type
-control</li>
-<li>Persistent caching to avoid re-downloading</li>
-<li>Exploratory browsing of the DATASUS catalog and FTP</li>
-<li>Parallel downloads with progress bars</li>
-<li>Territorial reference tables (municipalities, health regions)</li>
-<li>A tidyverse-native workflow with snake_case column names</li>
-</ul>
-<p><strong>Choose <code>microdatasus</code></strong> when you need:</p>
-<ul>
-<li>Automatic variable labelling and categorical recoding</li>
-<li>Analysis-ready data frames with minimal code</li>
-<li>A well-documented, published package (Cad. Saude Publica, 2019)</li>
-</ul>
-<p>The two packages can also complement each other: use
-<code>datasusr</code> for fast, cached I/O and
-<code>microdatasus::process_*()</code> for post-processing when
-needed.</p>
+<p><code>healthbR</code> is the most complete and currently the most
+actively maintained option for Brazilian public health data in R, and is
+the recommended starting point for most users. <code>datasusr</code> is
+a focused DATASUS-FTP reader and catalog tool: it shines when you need
+fast, flexible, dependency-light I/O against raw DBC files, but it does
+not try to match <code>healthbR</code>’s scope.</p>
 </div>
   </main><aside class="col-md-3"><nav id="toc" aria-label="Table of contents"><h2>On this page</h2>
     </nav></aside>

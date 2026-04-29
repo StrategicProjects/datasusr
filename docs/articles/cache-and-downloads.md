@@ -27,13 +27,22 @@ downloads <- datasus_fetch(
 
 ## Configuring the cache directory
 
+By default, downloads are placed in a session-scoped subdirectory of
+[`tempdir()`](https://rdrr.io/r/base/tempfile.html) (which R cleans up
+automatically when the session ends), so the package never writes
+outside the user-controlled tempdir unless you opt in.
+
 The cache location is resolved in the following order:
 
 1.  The `cache_dir` function argument
 2.  The `DATASUSR_CACHE_DIR` environment variable
 3.  The `datasusr.cache_dir` R option
-4.  The default user cache directory
-    (`tools::R_user_dir("datasusr", "cache")`)
+4.  The session default (`file.path(tempdir(), "datasusr-cache")`)
+
+To enable a persistent cache that survives across sessions, point one of
+the above to a directory of your choice — for example
+`tools::R_user_dir("datasusr", "cache")` — and the cache becomes truly
+persistent.
 
 To set it globally, add a line to your `.Renviron`:
 

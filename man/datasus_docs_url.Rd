@@ -22,9 +22,11 @@ actual files at each URL.
 datasus_docs_url()
 datasus_docs_url("CNES")
 
-\dontrun{
-# List documentation files for CNES
-docs <- datasus_docs_url("CNES")
-datasus_ftp_ls(docs$docs_url[[1]])
+\donttest{
+tryCatch({
+  # List documentation files for CNES (network required).
+  docs <- datasus_docs_url("CNES")
+  datasus_ftp_ls(docs$docs_url[[1]], verbose = FALSE)
+}, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 }
 }

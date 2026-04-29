@@ -48,13 +48,17 @@ Builds candidate file names from the internal catalog and, optionally,
 validates them against the DATASUS FTP.
 }
 \examples{
-\dontrun{
-datasus_list_files(
-  source    = "SIHSUS",
-  file_type = "RD",
-  year      = 2024,
-  month     = 1,
-  uf        = c("PE", "PB")
+\donttest{
+tryCatch(
+  datasus_list_files(
+    source    = "SIHSUS",
+    file_type = "RD",
+    year      = 2024,
+    month     = 1,
+    uf        = c("PE", "PB"),
+    verbose   = FALSE
+  ),
+  error = function(e) message("FTP unavailable: ", conditionMessage(e))
 )
 }
 }

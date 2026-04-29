@@ -42,20 +42,19 @@ tables for municipalities, health regions, and other geographic
 divisions used by SUS, in CSV, DBF, and TXT formats.
 }
 \examples{
-\dontrun{
-# Municipalities
-municipios <- datasus_get_territory("tb_municip")
-
-# Health regions
-regioes <- datasus_get_territory("tb_regsaud")
-
-# States
-ufs <- datasus_get_territory("tb_uf")
-
-# Specific year
-municipios_2023 <- datasus_get_territory("tb_municip", year = 2023)
-
-# List available years
-datasus_ftp_ls("ftp://ftp.datasus.gov.br/territorio/tabelas/")
+\donttest{
+tryCatch({
+  # Download territorial tables into tempdir() (network required).
+  municipios <- datasus_get_territory(
+    "tb_municip",
+    cache_dir = tempdir(),
+    verbose   = FALSE
+  )
+  ufs <- datasus_get_territory(
+    "tb_uf",
+    cache_dir = tempdir(),
+    verbose   = FALSE
+  )
+}, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 }
 }

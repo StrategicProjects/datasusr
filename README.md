@@ -10,6 +10,17 @@
 complete workflow for discovering, downloading, caching, and reading Brazilian
 public health data from the DATASUS FTP.
 
+> **Looking for a broader toolkit?** If your workflow goes beyond the DATASUS
+> FTP — e.g. you also need IBGE surveys (VIGITEL, PNS, PNAD-C, POF, Censo),
+> SISAB primary-care indicators, ANS, ANVISA, or out-of-the-box variable
+> dictionaries and value labels —
+> [`healthbR`](https://github.com/SidneyBissoli/healthbR) is the more complete
+> and currently more active package, and is the recommended first choice in
+> many cases. `datasusr` focuses on being a small, fast, dependency-light
+> reader for raw DBC files plus a catalog and FTP layer. See the
+> [Comparison article](https://strategicprojects.github.io/datasusr/articles/comparison.html)
+> for the full breakdown.
+
 <table class="important-banner"><tr><td>
 &#x2755;&#xFE0F; <strong class="important-title">Disclaimer</strong><br>
 This package is an independent, community-maintained tool that accesses

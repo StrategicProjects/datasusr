@@ -2,6 +2,27 @@
 
 ## datasusr 0.1.0
 
+### CRAN review fixes
+
+- `DESCRIPTION` now consistently single-quotes external software/API
+  names (‘DATASUS’, ‘DBC’, ‘DBF’, ‘FTP’, ‘C’, ‘PKWare DCL’, ‘blast’,
+  ‘zlib’) and unquotes the in-package function reference
+  [`datasus_fetch()`](https://strategicprojects.github.io/datasusr/reference/datasus_fetch.md).
+  The description field also now references the upstream sources
+  (DATASUS file transfer site and Adler 2003 for the bundled blast
+  decompressor).
+- All examples switched from `\dontrun{}` to `\donttest{}`. Network-
+  dependent examples are wrapped in
+  [`tryCatch()`](https://rdrr.io/r/base/conditions.html) and write to
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) so that running
+  them never touches the user’s home filespace.
+- The default cache directory is now a session-scoped subdirectory of
+  [`tempdir()`](https://rdrr.io/r/base/tempfile.html) instead of
+  `tools::R_user_dir("datasusr", "cache")`. To opt in to a persistent
+  cache across sessions, set the `DATASUSR_CACHE_DIR` environment
+  variable, the `datasusr.cache_dir` R option, or pass `cache_dir`
+  explicitly.
+
 ### Breaking changes
 
 - Package version bumped to 0.1.0 to reflect the expanded scope beyond

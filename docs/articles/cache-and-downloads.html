@@ -43,13 +43,12 @@
 <li class="active nav-item dropdown">
   <button class="nav-link dropdown-toggle" type="button" id="dropdown-articles" data-bs-toggle="dropdown" aria-expanded="false" aria-haspopup="true">Articles</button>
   <ul class="dropdown-menu" aria-labelledby="dropdown-articles">
-<li><hr class="dropdown-divider"></li>
-    <li><h6 class="dropdown-header" data-toc-skip>Guides</h6></li>
-    <li><a class="dropdown-item" href="../articles/getting-started.html">Getting started with datasusr</a></li>
-    <li><a class="dropdown-item" href="../articles/data-sources.html">Available data sources</a></li>
+<li><a class="dropdown-item" href="../articles/getting-started.html">Getting started</a></li>
+    <li><a class="dropdown-item" href="../articles/data-sources.html">Data sources</a></li>
     <li><a class="dropdown-item" href="../articles/cache-and-downloads.html">Cache and downloads</a></li>
     <li><a class="dropdown-item" href="../articles/performance-notes.html">Performance notes</a></li>
-    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with microdatasus</a></li>
+    <li><hr class="dropdown-divider"></li>
+    <li><a class="dropdown-item" href="../articles/comparison.html">Comparison with healthbR and microdatasus</a></li>
   </ul>
 </li>
 <li class="nav-item"><a class="nav-link" href="../news/index.html">Changelog</a></li>
@@ -106,14 +105,22 @@ access.</p>
 <div class="section level2">
 <h2 id="configuring-the-cache-directory">Configuring the cache directory<a class="anchor" aria-label="anchor" href="#configuring-the-cache-directory"></a>
 </h2>
+<p>By default, downloads are placed in a session-scoped subdirectory of
+<code><a href="https://rdrr.io/r/base/tempfile.html" class="external-link">tempdir()</a></code> (which R cleans up automatically when the session
+ends), so the package never writes outside the user-controlled tempdir
+unless you opt in.</p>
 <p>The cache location is resolved in the following order:</p>
 <ol style="list-style-type: decimal">
 <li>The <code>cache_dir</code> function argument</li>
 <li>The <code>DATASUSR_CACHE_DIR</code> environment variable</li>
 <li>The <code>datasusr.cache_dir</code> R option</li>
-<li>The default user cache directory
-(<code>tools::R_user_dir("datasusr", "cache")</code>)</li>
+<li>The session default
+(<code>file.path(tempdir(), "datasusr-cache")</code>)</li>
 </ol>
+<p>To enable a persistent cache that survives across sessions, point one
+of the above to a directory of your choice — for example
+<code>tools::R_user_dir("datasusr", "cache")</code> — and the cache
+becomes truly persistent.</p>
 <p>To set it globally, add a line to your <code>.Renviron</code>:</p>
 <pre><code>DATASUSR_CACHE_DIR=/path/to/my/cache</code></pre>
 <p>Or in R:</p>

@@ -309,8 +309,11 @@ datasus_ufs <- function() {
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' datasus_ftp_ls("SIHSUS/200801_/Dados/")
+#' \donttest{
+#' tryCatch(
+#'   datasus_ftp_ls("SIHSUS/200801_/Dados/", verbose = FALSE),
+#'   error = function(e) message("FTP unavailable: ", conditionMessage(e))
+#' )
 #' }
 datasus_ftp_ls <- function(path, timeout = 120, ftp_use_epsv = FALSE, verbose = TRUE) {
   if (!is.character(path) || length(path) != 1L || is.na(path)) {
@@ -588,13 +591,17 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' datasus_list_files(
-#'   source    = "SIHSUS",
-#'   file_type = "RD",
-#'   year      = 2024,
-#'   month     = 1,
-#'   uf        = c("PE", "PB")
+#' \donttest{
+#' tryCatch(
+#'   datasus_list_files(
+#'     source    = "SIHSUS",
+#'     file_type = "RD",
+#'     year      = 2024,
+#'     month     = 1,
+#'     uf        = c("PE", "PB"),
+#'     verbose   = FALSE
+#'   ),
+#'   error = function(e) message("FTP unavailable: ", conditionMessage(e))
 #' )
 #' }
 datasus_list_files <- function(
@@ -715,7 +722,11 @@ datasus_list_files <- function(
 #'
 #' Returns the active cache directory path. Checks, in order: the `cache_dir`
 #' argument, the `DATASUSR_CACHE_DIR` environment variable, the
-#' `datasusr.cache_dir` option, and finally the default user cache directory.
+#' `datasusr.cache_dir` option, and finally a session-scoped subdirectory of
+#' [tempdir()]. To opt in to a persistent cache across sessions, set the
+#' `DATASUSR_CACHE_DIR` environment variable, the `datasusr.cache_dir` option,
+#' or pass `cache_dir` explicitly (for example,
+#' `tools::R_user_dir("datasusr", "cache")`).
 #'
 #' @param cache_dir Optional cache directory supplied by the caller.
 #'
@@ -729,7 +740,7 @@ datasus_cache_dir <- function(cache_dir = NULL) {
     Sys.getenv("DATASUSR_CACHE_DIR", unset = "") |>
     (\(x) if (nchar(x) == 0L) NULL else x)() %||%
     getOption("datasusr.cache_dir") %||%
-    tools::R_user_dir("datasusr", which = "cache")
+    file.path(tempdir(), "datasusr-cache")
 }
 
 #' List cached DATASUS files
@@ -962,12 +973,19 @@ datasus_cache_prune <- function(cache_dir = NULL, max_size_bytes = NULL,
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' files <- datasus_list_files(
-#'   source = "SIHSUS", file_type = "RD",
-#'   year = 2024, month = 1, uf = "PE"
-#' )
-#' downloads <- datasus_download(files)
+#' \donttest{
+#' tryCatch({
+#'   files <- datasus_list_files(
+#'     source = "SIHSUS", file_type = "RD",
+#'     year = 2024, month = 1, uf = "AC",
+#'     verbose = FALSE
+#'   )
+#'   downloads <- datasus_download(
+#'     files,
+#'     cache_dir = tempdir(),
+#'     verbose   = FALSE
+#'   )
+#' }, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 #' }
 datasus_download <- function(
   files = NULL,
@@ -1094,25 +1112,20 @@ datasus_download <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Fetch SIH data for Pernambuco, Jan 2024
-#' df <- datasus_fetch(
-#'   source    = "SIHSUS",
-#'   file_type = "RD",
-#'   year      = 2024,
-#'   month     = 1,
-#'   uf        = "PE"
-#' )
-#'
-#' # Fetch with column selection (snake_case names work)
-#' df <- datasus_fetch(
-#'   source    = "SIHSUS",
-#'   file_type = "RD",
-#'   year      = 2024,
-#'   month     = 1:3,
-#'   uf        = "PE",
-#'   select    = c("uf_zi", "ano_cmpt", "munic_res", "val_tot")
-#' )
+#' \donttest{
+#' tryCatch({
+#'   # Fetch a small SIHSUS slice into tempdir() (network required).
+#'   df <- datasus_fetch(
+#'     source    = "SIHSUS",
+#'     file_type = "RD",
+#'     year      = 2024,
+#'     month     = 1,
+#'     uf        = "AC",
+#'     select    = c("uf_zi", "ano_cmpt", "munic_res", "val_tot"),
+#'     cache_dir = tempdir(),
+#'     verbose   = FALSE
+#'   )
+#' }, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 #' }
 datasus_fetch <- function(
   source,
@@ -1207,21 +1220,20 @@ datasus_fetch <- function(
 #' @export
 #'
 #' @examples
-#' \dontrun{
-#' # Municipalities
-#' municipios <- datasus_get_territory("tb_municip")
-#'
-#' # Health regions
-#' regioes <- datasus_get_territory("tb_regsaud")
-#'
-#' # States
-#' ufs <- datasus_get_territory("tb_uf")
-#'
-#' # Specific year
-#' municipios_2023 <- datasus_get_territory("tb_municip", year = 2023)
-#'
-#' # List available years
-#' datasus_ftp_ls("ftp://ftp.datasus.gov.br/territorio/tabelas/")
+#' \donttest{
+#' tryCatch({
+#'   # Download territorial tables into tempdir() (network required).
+#'   municipios <- datasus_get_territory(
+#'     "tb_municip",
+#'     cache_dir = tempdir(),
+#'     verbose   = FALSE
+#'   )
+#'   ufs <- datasus_get_territory(
+#'     "tb_uf",
+#'     cache_dir = tempdir(),
+#'     verbose   = FALSE
+#'   )
+#' }, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 #' }
 datasus_get_territory <- function(table = "tb_municip", year = NULL,
                                   format = "csv", cache_dir = NULL,
@@ -1348,10 +1360,12 @@ datasus_get_territory <- function(table = "tb_municip", year = NULL,
 #' datasus_docs_url()
 #' datasus_docs_url("CNES")
 #'
-#' \dontrun{
-#' # List documentation files for CNES
-#' docs <- datasus_docs_url("CNES")
-#' datasus_ftp_ls(docs$docs_url[[1]])
+#' \donttest{
+#' tryCatch({
+#'   # List documentation files for CNES (network required).
+#'   docs <- datasus_docs_url("CNES")
+#'   datasus_ftp_ls(docs$docs_url[[1]], verbose = FALSE)
+#' }, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 #' }
 datasus_docs_url <- function(source = NULL) {
   paths <- .datasus_extra_paths()

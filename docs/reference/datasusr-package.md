@@ -1,12 +1,15 @@
 # datasusr: Fast Access to Brazilian Public Health Data from 'DATASUS'
 
-Provides fast, in-memory reading of DATASUS DBC files using native 'C'
-code, along with a catalog of public health data sources, 'FTP' file
-discovery, caching downloads, and a high-level 'datasus_fetch()'
-function that lists, downloads, and reads files in a single call.
-Bundles the 'blast' decompressor from 'zlib' contrib/blast to decode
-'PKWare DCL'-compressed 'DBC' files and parses 'DBF' records directly
-for efficient import into tibbles.
+Provides fast, in-memory reading of 'DATASUS' 'DBC' files using native
+'C' code, along with a catalog of public health data sources, 'FTP' file
+discovery, caching downloads, and a high-level datasus_fetch() function
+that lists, downloads, and reads files in a single call. Bundles the
+'blast' decompressor from 'zlib' contrib/blast to decode 'PKWare DCL'
+compressed 'DBC' files and parses 'DBF' records directly for efficient
+import into tibbles. See the 'DATASUS' file transfer site
+<https://datasus.saude.gov.br> and Adler (2003)
+<https://github.com/madler/zlib/tree/master/contrib/blast> for details
+on the underlying data and compression format.
 
 ## See also
 

@@ -55,24 +55,19 @@ A convenience wrapper that lists, downloads, and reads DATASUS files in a
 single call. Particularly useful for interactive / exploratory work.
 }
 \examples{
-\dontrun{
-# Fetch SIH data for Pernambuco, Jan 2024
-df <- datasus_fetch(
-  source    = "SIHSUS",
-  file_type = "RD",
-  year      = 2024,
-  month     = 1,
-  uf        = "PE"
-)
-
-# Fetch with column selection (snake_case names work)
-df <- datasus_fetch(
-  source    = "SIHSUS",
-  file_type = "RD",
-  year      = 2024,
-  month     = 1:3,
-  uf        = "PE",
-  select    = c("uf_zi", "ano_cmpt", "munic_res", "val_tot")
-)
+\donttest{
+tryCatch({
+  # Fetch a small SIHSUS slice into tempdir() (network required).
+  df <- datasus_fetch(
+    source    = "SIHSUS",
+    file_type = "RD",
+    year      = 2024,
+    month     = 1,
+    uf        = "AC",
+    select    = c("uf_zi", "ano_cmpt", "munic_res", "val_tot"),
+    cache_dir = tempdir(),
+    verbose   = FALSE
+  )
+}, error = function(e) message("FTP unavailable: ", conditionMessage(e)))
 }
 }

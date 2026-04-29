@@ -12,7 +12,7 @@
 
 - **Diogo Bezerra**. Author.
 
-- **Mark Adler**. Contributor, copyright holder.\
+- **Mark Adler**. Contributor, copyright holder.  
   Author of bundled blast.c and blast.h from zlib contrib/blast
 
 ## Citation
