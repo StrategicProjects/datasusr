@@ -22,3 +22,6 @@ src/*.dll
 inst/cache/
 .DS_Store
 .positai
+
+# pkgdown site is built into the gh-pages branch
+docs/
