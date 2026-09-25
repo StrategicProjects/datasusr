@@ -29,5 +29,5 @@ A single path string.
 
 ``` r
 datasus_cache_dir()
-#> [1] "/var/folders/j9/7g_srh2x0d71c5q0pbj5mxh40000gn/T//Rtmp71iHr3/datasusr-cache"
+#> [1] "/var/folders/j9/7g_srh2x0d71c5q0pbj5mxh40000gn/T//RtmpcbeIXK/datasusr-cache"
 ```

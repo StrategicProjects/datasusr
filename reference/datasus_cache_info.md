@@ -30,7 +30,7 @@ datasus_cache_info()
 #> 
 #> ── datasusr cache ──
 #> 
-#> ℹ Directory: /var/folders/j9/7g_srh2x0d71c5q0pbj5mxh40000gn/T//Rtmp71iHr3/datasusr-cache
+#> ℹ Directory: /var/folders/j9/7g_srh2x0d71c5q0pbj5mxh40000gn/T//RtmpcbeIXK/datasusr-cache
 #> ℹ Files: 0
 #> ℹ Total size: 0 B
 #> # A tibble: 1 × 6
