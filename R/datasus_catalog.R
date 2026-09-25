@@ -63,7 +63,7 @@
 #' @return A tibble.
 #' @keywords internal
 .datasus_file_types_tbl <- function() {
-  tibble::tribble(
+  tbl <- tibble::tribble(
     ~source,            ~file_type, ~description,                                                               ~scope, ~frequency, ~availability,
     "SIHSUS",           "RD",       "RD - AIH Reduzida",                                                         "UF",   "monthly",  "current",
     "SIHSUS",           "RJ",       "RJ - AIH Rejeitadas",                                                       "UF",   "monthly",  "current",
@@ -124,7 +124,7 @@
     "SINAN",            "DIFT",     "DIFT - Difteria",                                                              "BR",   "yearly",   "current",
     "SINAN",            "RAIV",     "RAIV - Raiva Humana",                                                          "BR",   "yearly",   "current",
     "ESUSNOTIFICA",     "DCCR",     "DCCR - Doenca de Chagas Cronica",                                              "BR",   "yearly",   "current",
-    "ESUSNOTIFICA_P",   "DCCR",     "DCCR - Doenca de Chagas Cronica",                                              "BR",   "yearly",   "current",
+    "ESUSNOTIFICA_P",   "DCCR",     "DCCR - Doenca de Chagas Cronica",                                              "BR",   "yearly",   "prelim",
     "RESP",             "RESP",     "RESP - Notificacoes de casos suspeitos de SCZ",                                "UF",   "yearly",   "current",
     "PO",               "PO",       "PO - Painel de Oncologia",                                                     "BR",   "yearly",   "current",
     "PCE",              "PCE",      "PCE - Programa de Controle da Esquistossomose",                                "UF",   "yearly",   "current",
@@ -135,6 +135,13 @@
     "BASE_TERRITORIAL", "MAP",      "Bases Mapas",                                                                  "BR",   "static",   "current",
     "BASE_TERRITORIAL", "CNV",      "Conversoes",                                                                   "BR",   "static",   "current"
   )
+
+  # SINAN_P (preliminary SINAN tree) publishes the same agravos as SINAN.
+  sinan_p <- tbl[tbl$source == "SINAN", , drop = FALSE]
+  sinan_p$source <- "SINAN_P"
+  sinan_p$availability <- "prelim"
+
+  dplyr::bind_rows(tbl, sinan_p)
 }
 
 #' Internal path templates for DATASUS FTP
@@ -425,10 +432,14 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
   }
 
   if (src == "SINASC" && !is.null(year)) {
+    # Scalar predicates: `year` may have any length, so it must not be
+    # recycled against the template rows.
+    want_historical <- any(as.integer(year) <= 1995L)
+    want_current    <- any(as.integer(year) >= 1996L)
     paths <- dplyr::filter(
       paths,
-      (period == "historical" & .env$year <= 1995L) |
-        (period == "current"    & .env$year >= 1996L) |
+      (period == "historical" & .env$want_historical) |
+        (period == "current"    & .env$want_current) |
         (period == "prelim"     & .env$include_prelim)
     )
   }
@@ -469,6 +480,9 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
   years  <- year  %||% integer()
   months <- month %||% integer()
   ufs    <- uf    %||% character()
+  # TT-scoped types (SIM DO, SINASC DN) have one file per UF; no `uf` means
+  # every UF.
+  if (scope == "TT" && length(ufs) == 0L) ufs <- datasus_ufs()
 
   if (frequency == "monthly" && (length(years) == 0L || length(months) == 0L)) {
     cli::cli_abort(c(
@@ -504,7 +518,7 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
   # SIM DO: naming DOufYYYY.dbc (4-digit year in CID10 era)
 
   if (src_code == "SIM" && ft_code == "DO") {
-    out <- tidyr::crossing(uf = ufs %||% datasus_ufs(), token = tokens) |>
+    out <- tidyr::crossing(uf = ufs, token = tokens) |>
       dplyr::mutate(file_name = stringr::str_c("DO", uf, token, ".dbc"))
     return(out)
   }
@@ -518,7 +532,7 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
 
   # SINASC DN: naming DNufYYYY.dbc (4-digit year)
   if (src_code == "SINASC" && ft_code == "DN") {
-    out <- tidyr::crossing(uf = ufs %||% datasus_ufs(), token = tokens) |>
+    out <- tidyr::crossing(uf = ufs, token = tokens) |>
       dplyr::mutate(file_name = stringr::str_c("DN", uf, token, ".dbc"))
     return(out)
   }
@@ -569,6 +583,47 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
 
 # ---- List available files ----------------------------------------------------
 
+# Validate year / month / uf filters early, with informative errors.
+.datasus_validate_filters <- function(year = NULL, month = NULL, uf = NULL) {
+  max_year <- as.integer(format(Sys.Date(), "%Y")) + 1L
+
+  if (!is.null(year)) {
+    y <- suppressWarnings(as.numeric(year))
+    if (length(y) == 0L || anyNA(y) || any(y != round(y)) ||
+        any(y < 1979) || any(y > max_year)) {
+      cli::cli_abort(c(
+        "{.arg year} must contain whole numbers between 1979 and {max_year}.",
+        "x" = "Got: {.val {as.character(year)}}."
+      ))
+    }
+  }
+
+  if (!is.null(month)) {
+    m <- suppressWarnings(as.numeric(month))
+    if (length(m) == 0L || anyNA(m) || any(m != round(m)) ||
+        any(m < 1) || any(m > 12)) {
+      cli::cli_abort(c(
+        "{.arg month} must contain whole numbers between 1 and 12.",
+        "x" = "Got: {.val {as.character(month)}}."
+      ))
+    }
+  }
+
+  if (!is.null(uf)) {
+    u <- toupper(as.character(uf))
+    bad <- unique(u[is.na(u) | !(u %in% datasus_ufs())])
+    if (length(u) == 0L || length(bad) > 0L) {
+      cli::cli_abort(c(
+        "{.arg uf} must contain valid UF codes.",
+        "x" = "Invalid value{?s}: {.val {as.character(bad)}}.",
+        "i" = "Use {.fn datasus_ufs} to see valid UF codes."
+      ))
+    }
+  }
+
+  invisible(TRUE)
+}
+
 #' List available DATASUS files
 #'
 #' Builds candidate file names from the internal catalog and, optionally,
@@ -581,11 +636,19 @@ datasus_build_path <- function(source, file_type, year = NULL, month = NULL, inc
 #' @param uf Character vector of UF codes (required for UF-scoped sources).
 #' @param include_prelim Logical. Include preliminary data trees (default `TRUE`).
 #' @param check_exists Logical. Query the FTP and keep only files that exist
-#'   (default `TRUE`). Setting to `FALSE` skips FTP access and returns all
-#'   candidate files.
+#'   (default `TRUE`). File names are matched case-insensitively and the
+#'   spelling used on the FTP is returned. If an FTP directory cannot be
+#'   listed (e.g. a timeout), a warning is emitted and the candidate files of
+#'   that directory are kept with `exists = NA`. Setting to `FALSE` skips FTP
+#'   access and returns all candidate files (with `exists = NA`).
 #' @param timeout Timeout in seconds for FTP requests (default 120).
 #' @param ftp_use_epsv Logical. Passed to curl (default `FALSE`).
 #' @param verbose Logical. Emit progress messages (default `TRUE`).
+#'
+#' @details `year` must be between 1979 and next year, `month` between 1 and
+#'   12, and `uf` must be one of [datasus_ufs()]; invalid values raise an
+#'   error before any network access. For SIM `"DO"` and SINASC `"DN"`,
+#'   `uf = NULL` means all UFs.
 #'
 #' @return A tibble with one row per file, including its FTP URL and metadata.
 #' @export
@@ -616,6 +679,8 @@ datasus_list_files <- function(
   ftp_use_epsv = FALSE,
   verbose = TRUE
 ) {
+  .datasus_validate_filters(year = year, month = month, uf = uf)
+
   src_input <- unique(toupper(as.character(source)))
   ft_input  <- unique(toupper(as.character(file_type)))
   uf_input  <- if (is.null(uf)) NULL else unique(toupper(as.character(uf)))
@@ -668,22 +733,42 @@ datasus_list_files <- function(
       return(dplyr::mutate(out, exists = NA))
     }
 
+    failed_dirs <- character()
     dir_entries <- purrr::map(paths$path, \(p) {
       tryCatch(
         datasus_ftp_ls(p, timeout = timeout, ftp_use_epsv = ftp_use_epsv, verbose = FALSE),
-        error = function(e) tibble::tibble(ftp_url = p, entry = character())
+        error = function(e) {
+          failed_dirs <<- c(failed_dirs, p)
+          cli::cli_warn(c(
+            "Could not list FTP directory {.url {p}}.",
+            "x" = conditionMessage(e),
+            "i" = "Files in this directory are kept with {.code exists = NA}."
+          ))
+          tibble::tibble(ftp_url = character(), entry = character())
+        }
       )
     }) |>
-      purrr::list_rbind() |>
-      dplyr::rename(path = ftp_url, file_name = entry)
+      purrr::list_rbind()
+
+    # Match case-insensitively, but keep the FTP's actual spelling so the
+    # download URL is correct.
+    dir_entries <- tibble::tibble(
+      path     = as.character(dir_entries$ftp_url),
+      ftp_name = as.character(dir_entries$entry),
+      .key     = toupper(as.character(dir_entries$entry))
+    ) |>
+      dplyr::distinct(path, .key, .keep_all = TRUE)
 
     result <- out |>
-      dplyr::left_join(
-        dplyr::mutate(dir_entries, exists = TRUE),
-        by = c("path", "file_name")
+      dplyr::mutate(.key = toupper(file_name)) |>
+      dplyr::left_join(dir_entries, by = c("path", ".key")) |>
+      dplyr::mutate(
+        exists    = dplyr::if_else(path %in% .env$failed_dirs, NA, !is.na(ftp_name)),
+        file_name = dplyr::coalesce(ftp_name, file_name),
+        url       = stringr::str_c(path, file_name)
       ) |>
-      dplyr::mutate(exists = dplyr::coalesce(exists, FALSE)) |>
-      dplyr::filter(exists)
+      dplyr::select(-".key", -"ftp_name") |>
+      dplyr::filter(is.na(exists) | exists)
 
     if (nrow(result) == 0L && isTRUE(verbose)) {
       cli::cli_alert_warning(
@@ -691,7 +776,7 @@ datasus_list_files <- function(
       )
       cli::cli_alert_info("Directory tried: {.url {paths$path[[1]]}}")
       cli::cli_alert_info("File names tried: {.val {out$file_name}}")
-      cli::cli_alert_info("Files found in directory: {.val {dir_entries$file_name}}")
+      cli::cli_alert_info("Files found in directory: {.val {dir_entries$ftp_name}}")
     }
 
     result
@@ -949,18 +1034,82 @@ datasus_cache_prune <- function(cache_dir = NULL, max_size_bytes = NULL,
 
 # ---- Download ----------------------------------------------------------------
 
+# curl options for file transfers. The DATASUS FTP is slow, so instead of a
+# hard cap on the total transfer time (CURLOPT_TIMEOUT), stalled transfers are
+# detected with a connect timeout plus a low-speed limit. `timeout` is only
+# applied as an optional hard cap when it is a finite positive number.
+.datasus_curl_opts <- function(timeout = Inf) {
+  opts <- list(
+    connecttimeout  = 60L,
+    low_speed_limit = 1L,
+    low_speed_time  = 120L
+  )
+  if (.datasus_is_finite_timeout(timeout)) {
+    opts$timeout <- as.integer(ceiling(timeout))
+  }
+  opts
+}
+
+.datasus_is_finite_timeout <- function(timeout) {
+  is.numeric(timeout) && length(timeout) == 1L && !is.na(timeout) &&
+    is.finite(timeout) && timeout > 0
+}
+
+# Timeout used for FTP directory listings when the caller passes a download
+# `timeout` (which may be infinite).
+.datasus_ls_timeout <- function(timeout) {
+  if (.datasus_is_finite_timeout(timeout)) timeout else 120
+}
+
+# Destination directory for each file: <target_dir>/<source>/<file_type>/<period>.
+# `period` is included so that files with the same name in the current and
+# preliminary trees (e.g. SIM DOPE2022.dbc) do not collide.
+.datasus_dest_dirs <- function(files, target_dir) {
+  n <- nrow(files)
+  out <- if (all(c("source", "file_type") %in% names(files))) {
+    file.path(target_dir, files$source, files$file_type)
+  } else {
+    rep(target_dir, n)
+  }
+  if ("period" %in% names(files)) {
+    p <- as.character(files$period)
+    has_p <- !is.na(p) & nzchar(p)
+    out[has_p] <- file.path(out[has_p], p[has_p])
+  }
+  out
+}
+
 #' Download DATASUS files
 #'
 #' Downloads one or many DATASUS files. When `use_cache = TRUE`, files that
 #' already exist in the cache directory are reused instead of re-downloaded.
 #'
+#' Files are stored as
+#' `<dir>/<source>/<file_type>/<period>/<file_name>`, where `<dir>` is
+#' `dest_dir` or the cache directory and `<period>` is the FTP tree the file
+#' came from (`"current"`, `"historical"` or `"prelim"`). Keeping the period in
+#' the path means a preliminary file never shadows the final file of the same
+#' name. When `files` lacks the `source`/`file_type`/`period` columns, the
+#' corresponding path components are omitted.
+#'
+#' Each file is first written to a temporary `<file_name>.part` file and only
+#' renamed to its final name when the transfer succeeds, so an interrupted or
+#' failed download never becomes a cache hit.
+#'
 #' @param files A tibble returned by [datasus_list_files()]. When `NULL`,
 #'   additional filters are forwarded to [datasus_list_files()].
 #' @param ... Filters passed to [datasus_list_files()] when `files` is `NULL`.
-#' @param dest_dir Optional destination directory. When `NULL` and
-#'   `use_cache = TRUE`, the package cache directory is used.
-#' @param overwrite Logical. Overwrite existing files (default `FALSE`).
-#' @param timeout Timeout in seconds for each download (default 240).
+#' @param dest_dir Optional destination directory. When `NULL`, the package
+#'   cache directory is used if `use_cache = TRUE`; otherwise a fresh
+#'   subdirectory of [tempdir()] is used.
+#' @param overwrite Logical. Re-download files even when they already exist at
+#'   the destination (default `FALSE`).
+#' @param timeout Optional hard cap, in seconds, on the total transfer time of
+#'   each file (default `Inf`, no cap). Stalled transfers are always detected
+#'   independently: the connection must be established within 60 seconds and a
+#'   transfer is aborted when it stays below 1 byte/s for 120 seconds. When
+#'   `files` is `NULL`, a finite `timeout` is also used for the FTP listing
+#'   (otherwise 120 seconds).
 #' @param use_cache Logical. Store and reuse downloads in the cache directory
 #'   (default `TRUE`).
 #' @param cache_dir Optional cache directory.
@@ -968,8 +1117,11 @@ datasus_cache_prune <- function(cache_dir = NULL, max_size_bytes = NULL,
 #'   (default `FALSE`).
 #' @param verbose Logical. Emit progress messages (default `TRUE`).
 #'
-#' @return A tibble with a `local_file` column containing the paths to the
-#'   downloaded files, plus a `downloaded` flag.
+#' @return The `files` tibble with additional columns: `local_file` (path to
+#'   the local copy), `downloaded` (`TRUE` when the file was transferred in
+#'   this call), `success` (`TRUE` when `local_file` is available, either
+#'   downloaded or reused from the cache), `error` (the failure message, `NA`
+#'   on success) and `cache_dir`.
 #' @export
 #'
 #' @examples
@@ -992,14 +1144,17 @@ datasus_download <- function(
   ...,
   dest_dir = NULL,
   overwrite = FALSE,
-  timeout = 240,
+  timeout = Inf,
   use_cache = TRUE,
   cache_dir = NULL,
   refresh = FALSE,
   verbose = TRUE
 ) {
   if (is.null(files)) {
-    files <- datasus_list_files(..., check_exists = TRUE, timeout = timeout, verbose = verbose)
+    files <- datasus_list_files(
+      ..., check_exists = TRUE,
+      timeout = .datasus_ls_timeout(timeout), verbose = verbose
+    )
   }
 
   if (!tibble::is_tibble(files)) {
@@ -1008,31 +1163,31 @@ datasus_download <- function(
 
   if (nrow(files) == 0L) {
     if (isTRUE(verbose)) cli::cli_alert_warning("No files to download.")
-    return(dplyr::mutate(files, local_file = character(), downloaded = logical()))
+    return(dplyr::mutate(
+      files,
+      local_file = character(), downloaded = logical(),
+      success = logical(), error = character(), cache_dir = character()
+    ))
   }
 
   cache_dir <- datasus_cache_dir(cache_dir)
-  target_dir <- if (isTRUE(use_cache) && is.null(dest_dir)) cache_dir else (dest_dir %||% ".")
-
-  if (!dir.exists(target_dir)) {
-    dir.create(target_dir, recursive = TRUE, showWarnings = FALSE)
+  target_dir <- if (!is.null(dest_dir)) {
+    dest_dir
+  } else if (isTRUE(use_cache)) {
+    cache_dir
+  } else {
+    tempfile("datasusr-download-")
   }
 
-  has_source_cols <- all(c("source", "file_type") %in% names(files))
-
-  files <- files |>
-    dplyr::mutate(
-      source_dir = if (has_source_cols) file.path(target_dir, source, file_type) else target_dir,
-      dest_file  = file.path(source_dir, file_name),
-      was_cached = file.exists(dest_file)
-    )
+  dest_dirs <- .datasus_dest_dirs(files, target_dir)
+  dest_file <- file.path(dest_dirs, files$file_name)
+  was_cached <- file.exists(dest_file)
 
   # Create destination directories
-  unique_dirs <- unique(files$source_dir)
-  for (d in unique_dirs) dir.create(d, recursive = TRUE, showWarnings = FALSE)
+  for (d in unique(dest_dirs)) dir.create(d, recursive = TRUE, showWarnings = FALSE)
 
   # Separate cached vs needs-download
-  needs_download <- !files$was_cached | isTRUE(refresh) | isTRUE(overwrite) | !isTRUE(use_cache)
+  needs_download <- !was_cached | isTRUE(refresh) | isTRUE(overwrite)
   n_cached <- sum(!needs_download)
 
   if (isTRUE(verbose)) {
@@ -1042,48 +1197,73 @@ datasus_download <- function(
     }
   }
 
-  downloaded <- rep(FALSE, nrow(files))
+  n <- nrow(files)
+  downloaded <- rep(FALSE, n)
+  success    <- rep(TRUE, n)
+  error      <- rep(NA_character_, n)
 
   if (any(needs_download)) {
-    dl_urls  <- files$url[needs_download]
-    dl_dests <- files$dest_file[needs_download]
+    idx <- which(needs_download)
+    # Download each destination once, even if `files` has duplicated rows.
+    dl_idx   <- idx[!duplicated(dest_file[idx])]
+    dl_urls  <- files$url[dl_idx]
+    dl_dests <- dest_file[dl_idx]
+    part_files <- paste0(dl_dests, ".part")
+    unlink(part_files)
 
     if (isTRUE(verbose)) {
-      cli::cli_alert_info("Downloading {sum(needs_download)} file{?s} to {.path {target_dir}}.")
+      cli::cli_alert_info("Downloading {length(dl_idx)} file{?s} to {.path {target_dir}}.")
     }
 
-    dl_result <- curl::multi_download(
-      urls      = dl_urls,
-      destfiles = dl_dests,
-      progress  = isTRUE(verbose),
-      resume    = FALSE,
-      timeout   = timeout
-    )
+    dl_result <- do.call(curl::multi_download, c(
+      list(
+        urls      = dl_urls,
+        destfiles = part_files,
+        progress  = isTRUE(verbose),
+        resume    = FALSE
+      ),
+      .datasus_curl_opts(timeout)
+    ))
 
-    # Report failures
-    failed <- !dl_result$success
-    if (any(failed)) {
-      for (j in which(failed)) {
+    # `success` is NA for transfers that never finished (e.g. after Ctrl-C).
+    ok  <- dl_result$success %in% TRUE
+    err <- as.character(dl_result$error)
+
+    for (j in seq_along(dl_dests)) {
+      if (ok[[j]]) {
+        if (!isTRUE(file.rename(part_files[[j]], dl_dests[[j]]))) {
+          ok[[j]] <- FALSE
+          err[[j]] <- "Could not move the downloaded file into place."
+        }
+      }
+      if (!ok[[j]]) {
+        unlink(part_files[[j]])
+        if (is.na(err[[j]])) err[[j]] <- "Download did not complete (interrupted?)."
         cli::cli_alert_danger(
-          "Failed: {.file {basename(dl_dests[[j]])}}: {dl_result$error[[j]]}"
+          "Failed: {.file {basename(dl_dests[[j]])}}: {err[[j]]}"
         )
       }
     }
 
-    downloaded[needs_download] <- TRUE
+    m <- match(dest_file[idx], dl_dests)
+    downloaded[idx] <- ok[m]
+    success[idx]    <- ok[m]
+    error[idx]      <- ifelse(ok[m], NA_character_, err[m])
   }
 
   out <- files |>
     dplyr::mutate(
-      local_file = dest_file,
-      downloaded = downloaded,
+      local_file = .env$dest_file,
+      downloaded = .env$downloaded,
+      success    = .env$success,
+      error      = .env$error,
       cache_dir  = if (isTRUE(use_cache)) .env$cache_dir else NA_character_
-    ) |>
-    dplyr::select(-source_dir, -was_cached, -dest_file)
+    )
 
   if (isTRUE(verbose)) {
+    n_failed <- sum(!success)
     cli::cli_alert_success(
-      "Done: {sum(downloaded)} downloaded, {n_cached} reused from cache."
+      "Done: {length(unique(dest_file[downloaded]))} downloaded, {n_cached} reused from cache, {n_failed} failed."
     )
   }
 
@@ -1092,23 +1272,66 @@ datasus_download <- function(
 
 # ---- High-level convenience --------------------------------------------------
 
+# Preliminary rows of a file table: `period == "prelim"`, or a source that is
+# itself a preliminary alias of another source (SINAN_P, ESUSNOTIFICA_P).
+.datasus_prelim_rows <- function(tbl) {
+  p <- tbl$period %in% "prelim"
+  if ("source" %in% names(tbl)) {
+    p <- p | grepl("_P$", toupper(tbl$source))
+  }
+  p
+}
+
+# Rows of `tbl` that are preliminary copies of a final file present in the rows
+# flagged by `usable`. Matching ignores case (the FTP mixes spellings), treats
+# `<SOURCE>_P` as the same dataset as `<SOURCE>`, and includes the file type
+# when those columns exist.
+.datasus_shadowed_prelim <- function(tbl, usable = TRUE) {
+  prelim <- .datasus_prelim_rows(tbl)
+  key <- toupper(tbl$file_name)
+  if (all(c("source", "file_type") %in% names(tbl))) {
+    key <- paste(sub("_P$", "", toupper(tbl$source)), toupper(tbl$file_type),
+                 key, sep = "/")
+  }
+  prelim & key %in% key[!prelim & usable %in% TRUE]
+}
+
 #' Fetch DATASUS data in one step
 #'
 #' A convenience wrapper that lists, downloads, and reads DATASUS files in a
 #' single call. Particularly useful for interactive / exploratory work.
+#'
+#' Files that fail to download are skipped with a warning; if every download
+#' fails, an error is raised.
+#'
+#' When the same file is available both as a final release and as a
+#' preliminary one (a SIM `DO` year that has just been consolidated, or a
+#' `SINAN` file requested together with its `SINAN_P` alias), only the final
+#' version is read, so rows are not duplicated. A final file that could not be
+#' confirmed on the FTP does not suppress a preliminary copy that is known to
+#' exist. Use [datasus_list_files()] and [datasus_download()] directly to work
+#' with both copies.
 #'
 #' @inheritParams datasus_list_files
 #' @param bind Logical. When `TRUE` (the default), all files are row-bound into
 #'   a single tibble. When `FALSE`, a list of tibbles is returned.
 #' @param ... Additional arguments forwarded to [read_datasus_dbc()] (e.g.
 #'   `select`, `col_types`, `parse_dates`).
-#' @param timeout Timeout in seconds for FTP and download operations
-#'   (default 240).
+#' @param timeout Optional hard cap, in seconds, on each file transfer
+#'   (default `Inf`, no cap); see [datasus_download()]. A finite value is also
+#'   used for the FTP listing (otherwise 120 seconds).
 #' @param use_cache Logical. Reuse cached downloads (default `TRUE`).
 #' @param cache_dir Optional cache directory.
+#' @param refresh Logical. Force re-download even when a cached file exists
+#'   (default `FALSE`). Forwarded to [datasus_download()].
+#' @param overwrite Logical. Re-download files that already exist at the
+#'   destination (default `FALSE`). Forwarded to [datasus_download()].
 #' @param verbose Logical. Emit progress messages (default `TRUE`).
 #'
-#' @return A tibble (when `bind = TRUE`) or a named list of tibbles.
+#' @return A tibble (when `bind = TRUE`) or a named list of tibbles. List
+#'   names are the file names; when the same file name comes from more than
+#'   one FTP tree they are prefixed with the period (e.g.
+#'   `"prelim/DOPE2022.dbc"`).
 #' @export
 #'
 #' @examples
@@ -1136,9 +1359,11 @@ datasus_fetch <- function(
   ...,
   bind = TRUE,
   include_prelim = TRUE,
-  timeout = 240,
+  timeout = Inf,
   use_cache = TRUE,
   cache_dir = NULL,
+  refresh = FALSE,
+  overwrite = FALSE,
   verbose = TRUE
 ) {
   files <- datasus_list_files(
@@ -1146,7 +1371,7 @@ datasus_fetch <- function(
     year = year, month = month, uf = uf,
     include_prelim = include_prelim,
     check_exists = TRUE,
-    timeout = timeout,
+    timeout = .datasus_ls_timeout(timeout),
     verbose = verbose
   )
 
@@ -1155,13 +1380,66 @@ datasus_fetch <- function(
     return(tibble::tibble())
   }
 
+  # When the same file exists in both the final and the preliminary tree
+  # (e.g. DOPE2022.dbc in SIM/CID10/DORES and SIM/PRELIM/DORES), read only
+  # the final one so that rows are not duplicated.
+  # Before downloading, only a final file confirmed to exist on the FTP can
+  # shadow its preliminary copy; unverified candidates (exists = NA) keep the
+  # preliminary alternative until the final download actually succeeds.
+  if (all(c("period", "file_name") %in% names(files))) {
+    exists_col <- if ("exists" %in% names(files)) files$exists else NA
+    shadowed <- .datasus_shadowed_prelim(files, usable = exists_col %in% TRUE)
+    if (any(shadowed)) {
+      if (isTRUE(verbose)) {
+        cli::cli_alert_info(
+          "Skipping {sum(shadowed)} preliminary file{?s} superseded by a final version."
+        )
+      }
+      files <- files[!shadowed, , drop = FALSE]
+    }
+  }
+
   downloads <- datasus_download(
     files,
     use_cache = use_cache,
     cache_dir = cache_dir,
     timeout   = timeout,
+    refresh   = refresh,
+    overwrite = overwrite,
     verbose   = verbose
   )
+
+  failed <- !(downloads$success %in% TRUE)
+  if (all(failed)) {
+    cli::cli_abort(c(
+      "All {nrow(downloads)} download{?s} failed; nothing to read.",
+      "x" = "First error: {downloads$error[[1]]}",
+      "i" = "The DATASUS FTP may be unavailable; try again later."
+    ))
+  }
+  if (any(failed)) {
+    failed_names <- basename(downloads$local_file[failed])
+    cli::cli_warn(c(
+      "{sum(failed)} file{?s} failed to download and {?was/were} skipped.",
+      "x" = "Skipped: {.file {failed_names}}",
+      "x" = "First error: {downloads$error[failed][[1]]}"
+    ))
+    downloads <- downloads[!failed, , drop = FALSE]
+  }
+
+  # After downloading, a preliminary copy whose final version was obtained is
+  # dropped so that rows are never duplicated.
+  if (all(c("period", "file_name") %in% names(downloads))) {
+    shadowed <- .datasus_shadowed_prelim(downloads, usable = TRUE)
+    if (any(shadowed)) {
+      if (isTRUE(verbose)) {
+        cli::cli_alert_info(
+          "Skipping {sum(shadowed)} preliminary file{?s} superseded by a final version."
+        )
+      }
+      downloads <- downloads[!shadowed, , drop = FALSE]
+    }
+  }
 
   if (isTRUE(verbose)) {
     cli::cli_h2("Reading downloaded files")
@@ -1177,7 +1455,12 @@ datasus_fetch <- function(
     do.call(read_datasus_dbc, c(list(file = f, verbose = verbose), read_args))
   })
 
-  names(results) <- basename(downloads$local_file)
+  result_names <- basename(downloads$local_file)
+  if ("period" %in% names(downloads)) {
+    dup <- duplicated(result_names) | duplicated(result_names, fromLast = TRUE)
+    result_names[dup] <- paste0(downloads$period[dup], "/", result_names[dup])
+  }
+  names(results) <- result_names
 
   if (isTRUE(bind)) {
     out <- purrr::list_rbind(results)
@@ -1311,8 +1594,21 @@ datasus_get_territory <- function(table = "tb_municip", year = NULL,
       ))
     }
 
+    target_in_zip <- target_in_zip[[1]]
     utils::unzip(zip_dest, files = target_in_zip, exdir = dest_dir,
                  junkpaths = TRUE, overwrite = TRUE)
+
+    # The ZIP member may use a different case (e.g. TB_UF.CSV); store it under
+    # the caller's spelling so the cache lookup above finds it next time.
+    extracted <- file.path(dest_dir, basename(target_in_zip))
+    if (!identical(extracted, target_file) && file.exists(extracted)) {
+      if (!isTRUE(file.rename(extracted, target_file))) {
+        cli::cli_abort("Could not rename {.file {extracted}} to {.file {target_file}}.")
+      }
+    }
+    if (!file.exists(target_file)) {
+      cli::cli_abort("Could not extract {.file {target_in_zip}} from {.file {zip_name}}.")
+    }
 
     if (isTRUE(verbose)) {
       cli::cli_alert_success("Extracted {.file {paste0(table, '.', fmt)}} from {.file {zip_name}}.")

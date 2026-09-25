@@ -13,9 +13,11 @@ datasus_fetch(
   ...,
   bind = TRUE,
   include_prelim = TRUE,
-  timeout = 240,
+  timeout = Inf,
   use_cache = TRUE,
   cache_dir = NULL,
+  refresh = FALSE,
+  overwrite = FALSE,
   verbose = TRUE
 )
 }
@@ -38,21 +40,43 @@ a single tibble. When \code{FALSE}, a list of tibbles is returned.}
 
 \item{include_prelim}{Logical. Include preliminary data trees (default \code{TRUE}).}
 
-\item{timeout}{Timeout in seconds for FTP and download operations
-(default 240).}
+\item{timeout}{Optional hard cap, in seconds, on each file transfer
+(default \code{Inf}, no cap); see \code{\link[=datasus_download]{datasus_download()}}. A finite value is also
+used for the FTP listing (otherwise 120 seconds).}
 
 \item{use_cache}{Logical. Reuse cached downloads (default \code{TRUE}).}
 
 \item{cache_dir}{Optional cache directory.}
 
+\item{refresh}{Logical. Force re-download even when a cached file exists
+(default \code{FALSE}). Forwarded to \code{\link[=datasus_download]{datasus_download()}}.}
+
+\item{overwrite}{Logical. Re-download files that already exist at the
+destination (default \code{FALSE}). Forwarded to \code{\link[=datasus_download]{datasus_download()}}.}
+
 \item{verbose}{Logical. Emit progress messages (default \code{TRUE}).}
 }
 \value{
-A tibble (when \code{bind = TRUE}) or a named list of tibbles.
+A tibble (when \code{bind = TRUE}) or a named list of tibbles. List
+names are the file names; when the same file name comes from more than
+one FTP tree they are prefixed with the period (e.g.
+\code{"prelim/DOPE2022.dbc"}).
 }
 \description{
 A convenience wrapper that lists, downloads, and reads DATASUS files in a
 single call. Particularly useful for interactive / exploratory work.
+}
+\details{
+Files that fail to download are skipped with a warning; if every download
+fails, an error is raised.
+
+When the same file is available both as a final release and as a
+preliminary one (a SIM \code{DO} year that has just been consolidated, or a
+\code{SINAN} file requested together with its \code{SINAN_P} alias), only the final
+version is read, so rows are not duplicated. A final file that could not be
+confirmed on the FTP does not suppress a preliminary copy that is known to
+exist. Use \code{\link[=datasus_list_files]{datasus_list_files()}} and \code{\link[=datasus_download]{datasus_download()}} directly to work
+with both copies.
 }
 \examples{
 \donttest{

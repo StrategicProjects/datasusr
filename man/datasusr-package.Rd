@@ -6,6 +6,8 @@
 \alias{datasusr-package}
 \title{datasusr: Fast Access to Brazilian Public Health Data from 'DATASUS'}
 \description{
+\if{html}{\figure{logo.svg}{options: style='float: right' alt='logo' width='120'}}
+
 Provides fast, in-memory reading of 'DATASUS' 'DBC' files using native 'C' code, along with a catalog of public health data sources, 'FTP' file discovery, caching downloads, and a high-level datasus_fetch() function that lists, downloads, and reads files in a single call. Bundles the 'blast' decompressor from 'zlib' contrib/blast to decode 'PKWare DCL' compressed 'DBC' files and parses 'DBF' records directly for efficient import into tibbles. See the 'DATASUS' file transfer site \url{https://datasus.saude.gov.br} and Adler (2003) \url{https://github.com/madler/zlib/tree/master/contrib/blast} for details on the underlying data and compression format.
 }
 \seealso{
@@ -18,14 +20,15 @@ Useful links:
 
 }
 \author{
-\strong{Maintainer}: Andre Leite \email{leite@castlab.org}
+\strong{Maintainer}: Andre Leite \email{leite@castlab.org} (\href{https://orcid.org/0000-0002-4718-9766}{ORCID})
 
 Authors:
 \itemize{
-  \item Marcos Wasilew \email{marcos.wasilew@gmail.com}
-  \item Hugo Vasconcelos \email{hugo.vasconcelos@ufpe.br}
-  \item Carlos Amorim \email{carlos.agaf@ufpe.br}
-  \item Diogo Bezerra \email{diogo.bezerra@ufpe.br}
+  \item Andre Leite \email{leite@castlab.org} (\href{https://orcid.org/0000-0002-4718-9766}{ORCID})
+  \item Marcos Wasiliew \email{marcos.wasilew@gmail.com} (\href{https://orcid.org/0009-0004-4694-3159}{ORCID})
+  \item Hugo Vasconcelos \email{hugo.vasconcelos@ufpe.br} (\href{https://orcid.org/0000-0001-6249-0920}{ORCID})
+  \item Carlos Amorim \email{carlos.agaf@ufpe.br} (\href{https://orcid.org/0000-0001-6315-8305}{ORCID})
+  \item Diogo Bezerra \email{diogo.bezerra@ufpe.br} (\href{https://orcid.org/0000-0002-1216-8674}{ORCID})
 }
 
 Other contributors:

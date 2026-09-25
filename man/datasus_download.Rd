@@ -9,7 +9,7 @@ datasus_download(
   ...,
   dest_dir = NULL,
   overwrite = FALSE,
-  timeout = 240,
+  timeout = Inf,
   use_cache = TRUE,
   cache_dir = NULL,
   refresh = FALSE,
@@ -22,12 +22,19 @@ additional filters are forwarded to \code{\link[=datasus_list_files]{datasus_lis
 
 \item{...}{Filters passed to \code{\link[=datasus_list_files]{datasus_list_files()}} when \code{files} is \code{NULL}.}
 
-\item{dest_dir}{Optional destination directory. When \code{NULL} and
-\code{use_cache = TRUE}, the package cache directory is used.}
+\item{dest_dir}{Optional destination directory. When \code{NULL}, the package
+cache directory is used if \code{use_cache = TRUE}; otherwise a fresh
+subdirectory of \code{\link[=tempdir]{tempdir()}} is used.}
 
-\item{overwrite}{Logical. Overwrite existing files (default \code{FALSE}).}
+\item{overwrite}{Logical. Re-download files even when they already exist at
+the destination (default \code{FALSE}).}
 
-\item{timeout}{Timeout in seconds for each download (default 240).}
+\item{timeout}{Optional hard cap, in seconds, on the total transfer time of
+each file (default \code{Inf}, no cap). Stalled transfers are always detected
+independently: the connection must be established within 60 seconds and a
+transfer is aborted when it stays below 1 byte/s for 120 seconds. When
+\code{files} is \code{NULL}, a finite \code{timeout} is also used for the FTP listing
+(otherwise 120 seconds).}
 
 \item{use_cache}{Logical. Store and reuse downloads in the cache directory
 (default \code{TRUE}).}
@@ -40,12 +47,28 @@ additional filters are forwarded to \code{\link[=datasus_list_files]{datasus_lis
 \item{verbose}{Logical. Emit progress messages (default \code{TRUE}).}
 }
 \value{
-A tibble with a \code{local_file} column containing the paths to the
-downloaded files, plus a \code{downloaded} flag.
+The \code{files} tibble with additional columns: \code{local_file} (path to
+the local copy), \code{downloaded} (\code{TRUE} when the file was transferred in
+this call), \code{success} (\code{TRUE} when \code{local_file} is available, either
+downloaded or reused from the cache), \code{error} (the failure message, \code{NA}
+on success) and \code{cache_dir}.
 }
 \description{
 Downloads one or many DATASUS files. When \code{use_cache = TRUE}, files that
 already exist in the cache directory are reused instead of re-downloaded.
+}
+\details{
+Files are stored as
+\verb{<dir>/<source>/<file_type>/<period>/<file_name>}, where \verb{<dir>} is
+\code{dest_dir} or the cache directory and \verb{<period>} is the FTP tree the file
+came from (\code{"current"}, \code{"historical"} or \code{"prelim"}). Keeping the period in
+the path means a preliminary file never shadows the final file of the same
+name. When \code{files} lacks the \code{source}/\code{file_type}/\code{period} columns, the
+corresponding path components are omitted.
+
+Each file is first written to a temporary \verb{<file_name>.part} file and only
+renamed to its final name when the transfer succeeds, so an interrupted or
+failed download never becomes a cache hit.
 }
 \examples{
 \donttest{

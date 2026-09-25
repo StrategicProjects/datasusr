@@ -1,44 +1,36 @@
-## Resubmission
+## Update: datasusr 0.1.1
 
-This is a resubmission addressing the review comments from Benjamin Altmann.
+This is a maintenance release of a package first published on CRAN as
+0.1.0 (all CRAN check flavours OK). It follows an internal code audit
+of the compiled DBC/DBF reader and of the download layer; see
+`NEWS.md` for the full list.
 
-* `DESCRIPTION`: external software/API names ('DATASUS', 'DBC', 'DBF',
-  'FTP', 'C', 'PKWare DCL', 'blast', 'zlib') are now single-quoted
-  consistently in title and description; the in-package function name
-  `datasus_fetch()` is now unquoted. Added URL references for the
-  underlying data source and the bundled `blast` decompressor in the
-  description field, in the form `<https:...>` (no spaces) for
-  auto-linking.
-
-* All example sections switched from `\dontrun{}` to `\donttest{}`.
-  Network-dependent examples are wrapped in `tryCatch()` so they fail
-  gracefully when the FTP is unreachable, and use `tempdir()` for any
-  on-disk output. Examples checked under `R CMD check --as-cran
-  --run-donttest` (28 s wall time, no failures).
-
-* No function writes to the user's home filespace by default any more.
-  The cache directory now defaults to a session-scoped subdirectory of
-  `tempdir()`. A persistent cache is fully opt-in via the
-  `DATASUSR_CACHE_DIR` environment variable, the `datasusr.cache_dir`
-  R option, or an explicit `cache_dir` argument. Examples and tests
-  write only to `tempdir()`.
-
-## Other changes since the previous submission
-
-* The package website and the `comparison` vignette were updated to
-  position `datasusr` honestly relative to the broader-scope
-  `healthbR` package: `healthbR` is now recommended as the first choice
-  for users whose workflow extends beyond raw DATASUS DBC reading
-  (surveys, regulatory data, variable dictionaries, parallel
-  downloads). `datasusr` documents itself as the focused
-  dependency-light DBC reader and FTP-catalog layer.
+* Malformed DBF headers are now rejected instead of read out of bounds
+  (verified with AddressSanitizer); native buffers are released via
+  `R_UnwindProtect()` on error; deleted records are dropped; integer
+  overflow, invalid dates and unsupported encodings are handled.
+* Failed or interrupted downloads no longer poison the cache, and the
+  cache layout keys files by release period so final and preliminary
+  releases of the same file no longer collide.
+* An offline `testthat` suite was added. It builds synthetic DBF files
+  in `tempdir()` and exercises the download code with `file://` URLs,
+  so no test needs network access. Network-dependent examples remain in
+  `\donttest{}` and are guarded with `tryCatch()`.
 
 ## R CMD check results
 
+Local `R CMD check --as-cran` (including `--run-donttest`) on R 4.6.0 /
+macOS arm64 (Apple clang 21), with network access:
+
 0 errors | 0 warnings | 0 notes
 
-(Local checks show three environment-only NOTEs — `New submission`,
-unable to verify current time, and HTML Tidy version — none of which
-are intrinsic to the package. The local `WARNING` about
-`-Wfixed-enum-extension` originates inside an R header file as compiled
-by Apple Clang on macOS and does not appear on the CRAN check farm.)
+Locally the only NOTE is "Skipping checking HTML validation" because the
+macOS system HTML Tidy is too old; in a sandbox without network access two
+further environment-specific NOTEs appear ("unable to verify current
+time" and an `xcrun_db` file created by Apple's toolchain in the temp
+directory). None is intrinsic to the package. The compiled code builds cleanly
+with `-Wall -Wextra -pedantic` and the parser was additionally
+exercised under AddressSanitizer with malformed input.
+
+Known limitation: on Windows the reader uses `ftell()` and cannot read
+files larger than 2 GB; no DATASUS DBC file approaches that size.

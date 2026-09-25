@@ -190,11 +190,214 @@ static int blast_from_memory(
     in.len = src_len;
     in.pos = 0;
 
-    out->data = NULL;
-    out->size = 0;
-    out->capacity = 0;
+    free_output(out);
 
     return blast(blast_in_callback, &in, blast_out_callback, out, NULL, NULL);
+}
+
+/* A truncated plain DBF (fewer bytes than the header declares) is not a
+   DBC.  Its record area starts directly after the header and every record
+   begins with a deletion flag (' ' live, '*' deleted), optionally followed
+   by the 0x1A end-of-file marker. */
+static int looks_like_plain_dbf_records(
+    const unsigned char *buf,
+    size_t len,
+    size_t header_len,
+    size_t record_len
+) {
+    if (header_len > len || record_len == 0) {
+        return 0;
+    }
+
+    for (size_t off = header_len; off < len; off += record_len) {
+        if (off == len - 1 && buf[off] == 0x1A) {
+            break; /* dBase end-of-file marker */
+        }
+        if (buf[off] != ' ' && buf[off] != '*') {
+            return 0;
+        }
+    }
+
+    return 1;
+}
+
+typedef struct {
+    unsigned char *file_buf;
+    size_t file_len;
+    blast_output_t out;
+    SEXP select;
+    double n_max;
+    int trim_ws;
+    const char *encoding;
+    int guess_types;
+    SEXP col_types_values;
+    SEXP col_types_names;
+    int parse_dates;
+    int verbose;
+} read_ctx_t;
+
+/* Frees the malloc'd buffers.  Runs both on normal return and when an R
+   error (or interrupt/warning-as-error) unwinds through R_UnwindProtect. */
+static void read_ctx_cleanup(void *data, Rboolean jump) {
+    read_ctx_t *ctx = (read_ctx_t *) data;
+    (void) jump;
+
+    if (ctx->file_buf != NULL) {
+        free(ctx->file_buf);
+        ctx->file_buf = NULL;
+    }
+
+    free_output(&ctx->out);
+}
+
+static SEXP ctx_parse_parts(
+    read_ctx_t *ctx,
+    const unsigned char *header_buf,
+    size_t header_len,
+    const unsigned char *records_buf,
+    size_t records_len
+) {
+    return parse_dbf_parts(
+        header_buf,
+        header_len,
+        records_buf,
+        records_len,
+        ctx->select,
+        ctx->n_max,
+        ctx->trim_ws,
+        ctx->encoding,
+        ctx->guess_types,
+        ctx->col_types_values,
+        ctx->col_types_names,
+        ctx->parse_dates,
+        ctx->verbose
+    );
+}
+
+static SEXP read_dbc_body(void *data) {
+    read_ctx_t *ctx = (read_ctx_t *) data;
+    unsigned char *file_buf = ctx->file_buf;
+    size_t file_len = ctx->file_len;
+    int verbose = ctx->verbose;
+
+    /* A plain DBF must not only be long enough for the declared records:
+       every record must also start with a deletion flag.  A small DBC whose
+       compressed payload is larger than the uncompressed record area passes
+       the size test alone, so both are required before skipping blast(). */
+    if (looks_like_complete_dbf(file_buf, file_len) &&
+        looks_like_plain_dbf_records(file_buf, file_len,
+                                     le_u16(file_buf + 8), le_u16(file_buf + 10))) {
+        uint16_t header_len = le_u16(file_buf + 8);
+
+        if (verbose) {
+            Rprintf("Input already looks like a complete DBF file; skipping blast()\n");
+            Rprintf("DBF size: %zu bytes\n", file_len);
+        }
+
+        return ctx_parse_parts(
+            ctx,
+            file_buf,
+            (size_t) header_len,
+            file_buf + header_len,
+            file_len - (size_t) header_len
+        );
+    }
+
+    if (looks_like_dbf_header(file_buf, file_len)) {
+        uint16_t header_len = le_u16(file_buf + 8);
+        uint16_t record_len = le_u16(file_buf + 10);
+        size_t comp_offset = (size_t) header_len + CRC_OFFSET;
+        int rc = -1;
+
+        if (verbose) {
+            Rprintf("Detected DBF header in input; trying to decompress record area\n");
+            Rprintf("Header length: %u bytes\n", (unsigned) header_len);
+        }
+
+        if (comp_offset < file_len) {
+            rc = blast_from_memory(file_buf + comp_offset, file_len - comp_offset, &ctx->out);
+        }
+
+        /* Fallback: some DBC files have no CRC bytes between header and
+           compressed payload.  If blast fails with the default 4-byte skip,
+           retry starting right after the header. */
+        if (rc != 0 && CRC_OFFSET > 0) {
+            comp_offset = (size_t) header_len;
+
+            if (verbose) {
+                Rprintf("Retrying decompression without CRC skip (offset=%zu)\n", comp_offset);
+            }
+
+            rc = blast_from_memory(file_buf + comp_offset, file_len - comp_offset, &ctx->out);
+        }
+
+        if (rc != 0) {
+            free_output(&ctx->out);
+
+            /* Not a DBC: a truncated plain DBF.  Parse what is there;
+               parse_dbf_parts() warns about the missing records. */
+            if (looks_like_plain_dbf_records(file_buf, file_len, header_len, record_len)) {
+                if (verbose) {
+                    Rprintf("Input looks like a truncated plain DBF file; reading available records\n");
+                }
+
+                return ctx_parse_parts(
+                    ctx,
+                    file_buf,
+                    (size_t) header_len,
+                    file_buf + header_len,
+                    file_len - (size_t) header_len
+                );
+            }
+
+            error("Failed to decompress DBC record area with blast(); code=%d", rc);
+        }
+
+        if (verbose) {
+            Rprintf("DBC decompressed successfully from record area\n");
+            Rprintf("Compressed payload offset: %zu\n", comp_offset);
+            Rprintf("Decompressed record bytes: %zu\n", ctx->out.size);
+        }
+
+        return ctx_parse_parts(
+            ctx,
+            file_buf,
+            (size_t) header_len,
+            ctx->out.data,
+            ctx->out.size
+        );
+    }
+
+    {
+        int rc = blast_from_memory(file_buf, file_len, &ctx->out);
+
+        if (rc != 0) {
+            error("Failed to decompress DBC with blast(); code=%d", rc);
+        }
+
+        if (!looks_like_complete_dbf(ctx->out.data, ctx->out.size)) {
+            error("Decompression succeeded, but output does not look like a valid DBF file.");
+        }
+
+        if (verbose) {
+            Rprintf("Whole-file DBC decompressed successfully\n");
+            Rprintf("Decompressed DBF size: %zu bytes\n", ctx->out.size);
+        }
+
+        return parse_dbf_buffer(
+            ctx->out.data,
+            ctx->out.size,
+            ctx->select,
+            ctx->n_max,
+            ctx->trim_ws,
+            ctx->encoding,
+            ctx->guess_types,
+            ctx->col_types_values,
+            ctx->col_types_names,
+            ctx->parse_dates,
+            ctx->verbose
+        );
+    }
 }
 
 SEXP c_read_datasus_dbc(
@@ -209,157 +412,35 @@ SEXP c_read_datasus_dbc(
     SEXP parse_dates_sexp,
     SEXP verbose_sexp
 ) {
+    read_ctx_t ctx;
     const char *path = CHAR(STRING_ELT(file_sexp, 0));
-    const char *encoding = CHAR(STRING_ELT(encoding_sexp, 0));
-    double n_max = REAL(nmax_sexp)[0];
-    int trim_ws = LOGICAL(trim_sexp)[0];
-    int guess_types = LOGICAL(guess_types_sexp)[0];
-    int parse_dates = LOGICAL(parse_dates_sexp)[0];
-    int verbose = LOGICAL(verbose_sexp)[0];
 
-    size_t file_len = 0;
-    unsigned char *file_buf = read_file_bin(path, &file_len);
+    ctx.file_buf = NULL;
+    ctx.file_len = 0;
+    ctx.out.data = NULL;
+    ctx.out.size = 0;
+    ctx.out.capacity = 0;
+    ctx.select = select_sexp;
+    ctx.n_max = REAL(nmax_sexp)[0];
+    ctx.trim_ws = LOGICAL(trim_sexp)[0];
+    ctx.encoding = CHAR(STRING_ELT(encoding_sexp, 0));
+    ctx.guess_types = LOGICAL(guess_types_sexp)[0];
+    ctx.col_types_values = col_types_values_sexp;
+    ctx.col_types_names = col_types_names_sexp;
+    ctx.parse_dates = LOGICAL(parse_dates_sexp)[0];
+    ctx.verbose = LOGICAL(verbose_sexp)[0];
 
-    if (file_buf == NULL) {
+    /* Allocate the continuation token before any malloc so that an
+       allocation failure here cannot leak. */
+    SEXP token = PROTECT(R_MakeUnwindCont());
+
+    ctx.file_buf = read_file_bin(path, &ctx.file_len);
+    if (ctx.file_buf == NULL) {
         error("Failed to read DBC file: %s", path);
     }
 
-    if (looks_like_complete_dbf(file_buf, file_len)) {
-        uint16_t header_len = le_u16(file_buf + 8);
+    SEXP ans = R_UnwindProtect(read_dbc_body, &ctx, read_ctx_cleanup, &ctx, token);
 
-        if (verbose) {
-            Rprintf("Input already looks like a complete DBF file; skipping blast()\n");
-            Rprintf("DBF size: %zu bytes\n", file_len);
-        }
-
-        SEXP ans = PROTECT(parse_dbf_parts(
-            file_buf,
-            (size_t) header_len,
-            file_buf + header_len,
-            file_len - (size_t) header_len,
-            select_sexp,
-            n_max,
-            trim_ws,
-            encoding,
-            guess_types,
-            col_types_values_sexp,
-            col_types_names_sexp,
-            parse_dates,
-            verbose
-        ));
-
-        free(file_buf);
-        UNPROTECT(1);
-        return ans;
-    }
-
-    if (looks_like_dbf_header(file_buf, file_len)) {
-        uint16_t header_len = le_u16(file_buf + 8);
-        size_t comp_offset = (size_t) header_len + CRC_OFFSET;
-
-        if (comp_offset >= file_len) {
-            free(file_buf);
-            error("Invalid DBC structure: compressed payload offset is beyond end of file.");
-        }
-
-        if (verbose) {
-            Rprintf("Detected DBF header in input; trying to decompress record area\n");
-            Rprintf("Header length: %u bytes\n", (unsigned) header_len);
-        }
-
-        const unsigned char *comp_body = file_buf + comp_offset;
-        size_t comp_body_len = file_len - comp_offset;
-
-        blast_output_t body_out;
-        int rc = blast_from_memory(comp_body, comp_body_len, &body_out);
-
-        /* Fallback: some DBC files have no CRC bytes between header and
-           compressed payload.  If blast fails with the default 4-byte skip,
-           retry starting right after the header. */
-        if (rc != 0 && CRC_OFFSET > 0) {
-            free_output(&body_out);
-
-            comp_offset = (size_t) header_len;
-            comp_body = file_buf + comp_offset;
-            comp_body_len = file_len - comp_offset;
-
-            if (verbose) {
-                Rprintf("Retrying decompression without CRC skip (offset=%zu)\n", comp_offset);
-            }
-
-            rc = blast_from_memory(comp_body, comp_body_len, &body_out);
-        }
-
-        if (rc != 0) {
-            free(file_buf);
-            free_output(&body_out);
-            error("Failed to decompress DBC record area with blast(); code=%d", rc);
-        }
-
-        if (verbose) {
-            Rprintf("DBC decompressed successfully from record area\n");
-            Rprintf("Compressed payload offset: %zu\n", comp_offset);
-            Rprintf("Decompressed record bytes: %zu\n", body_out.size);
-        }
-
-        SEXP ans = PROTECT(parse_dbf_parts(
-            file_buf,
-            (size_t) header_len,
-            body_out.data,
-            body_out.size,
-            select_sexp,
-            n_max,
-            trim_ws,
-            encoding,
-            guess_types,
-            col_types_values_sexp,
-            col_types_names_sexp,
-            parse_dates,
-            verbose
-        ));
-
-        free_output(&body_out);
-        free(file_buf);
-        UNPROTECT(1);
-        return ans;
-    }
-
-    {
-        blast_output_t out;
-        int rc = blast_from_memory(file_buf, file_len, &out);
-        free(file_buf);
-
-        if (rc != 0) {
-            free_output(&out);
-            error("Failed to decompress DBC with blast(); code=%d", rc);
-        }
-
-        if (!looks_like_complete_dbf(out.data, out.size)) {
-            free_output(&out);
-            error("Decompression succeeded, but output does not look like a valid DBF file.");
-        }
-
-        if (verbose) {
-            Rprintf("Whole-file DBC decompressed successfully\n");
-            Rprintf("Decompressed DBF size: %zu bytes\n", out.size);
-        }
-
-        SEXP ans = PROTECT(parse_dbf_buffer(
-            out.data,
-            out.size,
-            select_sexp,
-            n_max,
-            trim_ws,
-            encoding,
-            guess_types,
-            col_types_values_sexp,
-            col_types_names_sexp,
-            parse_dates,
-            verbose
-        ));
-
-        free_output(&out);
-        UNPROTECT(1);
-        return ans;
-    }
+    UNPROTECT(1);
+    return ans;
 }

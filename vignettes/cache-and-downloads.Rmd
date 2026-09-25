@@ -34,6 +34,28 @@ downloads <- datasus_fetch(
 )
 ```
 
+### Cache layout
+
+Each file is stored as
+
+```
+<cache_dir>/<source>/<file_type>/<period>/<file_name>
+```
+
+for example `SIM/DO/current/DOPE2022.dbc` and `SIM/DO/prelim/DOPE2022.dbc`.
+`<period>` is the FTP tree the file came from (`current`, `historical` or
+`prelim`), so a preliminary file never shadows the final file of the same
+name. The same layout is used under `dest_dir` when you pass one.
+
+Downloads are first written to a temporary `<file_name>.part` file and only
+renamed to the final name once the transfer succeeds, so an interrupted or
+failed download never ends up in the cache. `datasus_download()` reports the
+outcome of each file in the `success` and `error` columns, and
+`datasus_fetch()` skips failed files with a warning.
+
+With `use_cache = FALSE` and no `dest_dir`, files go to a fresh temporary
+subdirectory of `tempdir()` instead of the cache.
+
 ## Configuring the cache directory
 
 By default, downloads are placed in a session-scoped subdirectory of
@@ -81,7 +103,17 @@ re-download files even when they exist in the cache:
 
 ```{r eval = FALSE}
 datasus_download(files, refresh = TRUE)
+
+datasus_fetch("SIM", "DO", year = 2022, uf = "PE", refresh = TRUE)
 ```
+
+## Timeouts
+
+The DATASUS FTP can be slow, so downloads have no hard limit on the total
+transfer time by default. Instead, a connection must be established within 60
+seconds and a transfer is aborted when it stays below 1 byte/s for 120
+seconds. Pass a finite `timeout` (in seconds) to `datasus_download()` or
+`datasus_fetch()` to also impose a hard cap per file.
 
 ## Pruning and clearing the cache
 

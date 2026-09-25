@@ -23,15 +23,21 @@ uncompressed (DBF) formats are accepted.}
 
 \item{select}{Optional character vector of column names to keep. When
 \code{NULL} (the default), all columns are returned. Names are matched
-case-insensitively, so both \code{"UF_ZI"} and \code{"uf_zi"} work.}
+case-insensitively, so both \code{"UF_ZI"} and \code{"uf_zi"} work. Names that
+match no column trigger a warning.}
 
-\item{n_max}{Maximum number of rows to read. Defaults to \code{Inf} (all rows).}
+\item{n_max}{Maximum number of rows to read. Defaults to \code{Inf} (all rows).
+Records flagged as deleted in the DBF are always skipped and do not
+count towards \code{n_max}.}
 
 \item{trim_ws}{Logical. Trim leading/trailing whitespace from character
-fields (default \code{TRUE}).}
+fields (default \code{TRUE}). Numeric, date and logical fields are always
+trimmed before parsing, regardless of this setting.}
 
-\item{encoding}{Encoding of the DBF character fields. Typically \code{"latin1"}
-(the default for DATASUS files) or \code{"UTF-8"}.}
+\item{encoding}{Encoding of the DBF character fields. One of \code{"latin1"}
+(the default for DATASUS files; the aliases \code{"latin-1"} and
+\code{"ISO-8859-1"} are accepted), \code{"UTF-8"} or \code{"unknown"} (native
+encoding). Matching is case-insensitive; any other value is an error.}
 
 \item{guess_types}{Logical. Inspect numeric fields to distinguish
 integer-like columns from double columns (default \code{TRUE}). Disable for

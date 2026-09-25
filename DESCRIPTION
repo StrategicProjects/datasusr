@@ -1,13 +1,18 @@
 Package: datasusr
 Type: Package
 Title: Fast Access to Brazilian Public Health Data from 'DATASUS'
-Version: 0.1.0
+Version: 0.1.1
 Authors@R: c(
-    person("Andre", "Leite", email = "leite@castlab.org", role = c("aut", "cre")),
-    person("Marcos", "Wasilew", email = "marcos.wasilew@gmail.com", role = "aut"),
-    person("Hugo", "Vasconcelos", email = "hugo.vasconcelos@ufpe.br", role = "aut"),
-    person("Carlos", "Amorim", email = "carlos.agaf@ufpe.br", role = "aut"),
-    person("Diogo", "Bezerra", email = "diogo.bezerra@ufpe.br", role = "aut"),
+    person("Andre", "Leite", email = "leite@castlab.org", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-4718-9766")),
+    person("Marcos", "Wasiliew", email = "marcos.wasilew@gmail.com", role = "aut",
+           comment = c(ORCID = "0009-0004-4694-3159")),
+    person("Hugo", "Vasconcelos", email = "hugo.vasconcelos@ufpe.br", role = "aut",
+           comment = c(ORCID = "0000-0001-6249-0920")),
+    person("Carlos", "Amorim", email = "carlos.agaf@ufpe.br", role = "aut",
+           comment = c(ORCID = "0000-0001-6315-8305")),
+    person("Diogo", "Bezerra", email = "diogo.bezerra@ufpe.br", role = "aut",
+           comment = c(ORCID = "0000-0002-1216-8674")),
     person("Mark", "Adler", role = c("ctb", "cph"),
            comment = "Author of bundled blast.c and blast.h from zlib contrib/blast"))
 Description: Provides fast, in-memory reading of 'DATASUS' 'DBC' files using
@@ -21,30 +26,27 @@ Description: Provides fast, in-memory reading of 'DATASUS' 'DBC' files using
     <https://github.com/madler/zlib/tree/master/contrib/blast> for details on
     the underlying data and compression format.
 License: MIT + file LICENSE
-URL: https://strategicprojects.github.io/datasusr/, https://github.com/StrategicProjects/datasusr
+URL: https://strategicprojects.github.io/datasusr/,
+        https://github.com/StrategicProjects/datasusr
 BugReports: https://github.com/StrategicProjects/datasusr/issues
 Encoding: UTF-8
 Language: en-US
-LazyData: false
-Depends:
-    R (>= 4.1.0)
-Imports:
-    cli,
-    curl (>= 5.0.0),
-    dplyr (>= 1.1.0),
-    purrr,
-    rlang (>= 1.0.0),
-    stringr,
-    tibble,
-    tidyr
-Suggests:
-    knitr,
-    pkgdown,
-    rmarkdown,
-    testthat (>= 3.0.0)
+Depends: R (>= 4.1.0)
+Imports: cli, curl (>= 5.0.0), dplyr (>= 1.1.0), purrr, rlang (>=
+        1.0.0), stringr, tibble, tidyr
+Suggests: knitr, pkgdown, rmarkdown, testthat (>= 3.1.7)
 VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
-RoxygenNote: 7.3.3
 NeedsCompilation: yes
 SystemRequirements: C99
+Config/roxygen2/version: 8.0.0
+Packaged: 2026-09-25 18:04:07 UTC; leite
+Author: Andre Leite [aut, cre] (ORCID: <https://orcid.org/0000-0002-4718-9766>),
+  Marcos Wasiliew [aut] (ORCID: <https://orcid.org/0009-0004-4694-3159>),
+  Hugo Vasconcelos [aut] (ORCID: <https://orcid.org/0000-0001-6249-0920>),
+  Carlos Amorim [aut] (ORCID: <https://orcid.org/0000-0001-6315-8305>),
+  Diogo Bezerra [aut] (ORCID: <https://orcid.org/0000-0002-1216-8674>),
+  Mark Adler [ctb, cph] (Author of bundled blast.c and blast.h from zlib
+    contrib/blast)
+Maintainer: Andre Leite <leite@castlab.org>

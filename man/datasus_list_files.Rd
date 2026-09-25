@@ -31,8 +31,11 @@ datasus_list_files(
 \item{include_prelim}{Logical. Include preliminary data trees (default \code{TRUE}).}
 
 \item{check_exists}{Logical. Query the FTP and keep only files that exist
-(default \code{TRUE}). Setting to \code{FALSE} skips FTP access and returns all
-candidate files.}
+(default \code{TRUE}). File names are matched case-insensitively and the
+spelling used on the FTP is returned. If an FTP directory cannot be
+listed (e.g. a timeout), a warning is emitted and the candidate files of
+that directory are kept with \code{exists = NA}. Setting to \code{FALSE} skips FTP
+access and returns all candidate files (with \code{exists = NA}).}
 
 \item{timeout}{Timeout in seconds for FTP requests (default 120).}
 
@@ -46,6 +49,12 @@ A tibble with one row per file, including its FTP URL and metadata.
 \description{
 Builds candidate file names from the internal catalog and, optionally,
 validates them against the DATASUS FTP.
+}
+\details{
+\code{year} must be between 1979 and next year, \code{month} between 1 and
+12, and \code{uf} must be one of \code{\link[=datasus_ufs]{datasus_ufs()}}; invalid values raise an
+error before any network access. For SIM \code{"DO"} and SINASC \code{"DN"},
+\code{uf = NULL} means all UFs.
 }
 \examples{
 \donttest{

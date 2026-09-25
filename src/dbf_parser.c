@@ -5,6 +5,7 @@
 #include <R_ext/Print.h>
 
 #include <ctype.h>
+#include <errno.h>
 #include <limits.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -20,7 +21,8 @@ typedef enum {
 } col_target_t;
 
 typedef struct {
-    char *name;
+    char name[12];
+    char upper_name[12];
     char type;
     unsigned char len;
     unsigned char dec;
@@ -40,13 +42,15 @@ static uint32_t le_u32(const unsigned char *p) {
         ((uint32_t) p[3] << 24));
 }
 
-static int match_select(SEXP select, const char *name) {
+/* `select` is uppercased on the R side; compare it against the uppercased
+   DBF field name so matching is case-insensitive on both sides. */
+static int match_select(SEXP select, const char *upper_name) {
     if (TYPEOF(select) != STRSXP || XLENGTH(select) == 0) {
         return 1;
     }
 
     for (R_xlen_t i = 0; i < XLENGTH(select); i++) {
-        if (strcmp(CHAR(STRING_ELT(select, i)), name) == 0) {
+        if (strcmp(CHAR(STRING_ELT(select, i)), upper_name) == 0) {
             return 1;
         }
     }
@@ -105,6 +109,32 @@ static int is_all_digits_n(const char *x, int n) {
     return 1;
 }
 
+/* Parse a decimal integer that is representable as a non-NA R integer.
+   Returns 1 and stores the value on success, 0 otherwise.  INT_MIN is
+   rejected because it is R's NA_integer_. */
+static int parse_r_int(const char *x, int *out) {
+    char *endptr = NULL;
+    errno = 0;
+    long val = strtol(x, &endptr, 10);
+    if (endptr == x || *endptr != '\0' || errno == ERANGE) {
+        return 0;
+    }
+    if (val <= (long) INT_MIN || val > (long) INT_MAX) {
+        return 0;
+    }
+    *out = (int) val;
+    return 1;
+}
+
+static int days_in_month(int year, int month) {
+    static const int mdays[12] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+    if (month == 2) {
+        int leap = (year % 4 == 0 && year % 100 != 0) || (year % 400 == 0);
+        return leap ? 29 : 28;
+    }
+    return mdays[month - 1];
+}
+
 static int parse_dbf_date_days_raw(const unsigned char *src, int n) {
     if (n < 8) {
         return NA_INTEGER;
@@ -122,7 +152,7 @@ static int parse_dbf_date_days_raw(const unsigned char *src, int n) {
     int month = (tmp[4] - '0') * 10 + (tmp[5] - '0');
     int day = (tmp[6] - '0') * 10 + (tmp[7] - '0');
 
-    if (month < 1 || month > 12 || day < 1 || day > 31) {
+    if (month < 1 || month > 12 || day < 1 || day > days_in_month(year, month)) {
         return NA_INTEGER;
     }
 
@@ -149,12 +179,15 @@ static int parse_yyyymmdd_char_days(const char *src) {
     return parse_dbf_date_days_raw((const unsigned char *) src, 8);
 }
 
+/* The R wrapper validates `encoding` and passes one of "latin1", "UTF-8"
+   or "unknown". */
 static cetype_t get_encoding_ce(const char *encoding) {
     if (encoding == NULL) {
         return CE_LATIN1;
     }
 
-    if (strcmp(encoding, "UTF-8") == 0 || strcmp(encoding, "utf-8") == 0) {
+    if (strcmp(encoding, "UTF-8") == 0 || strcmp(encoding, "utf-8") == 0 ||
+        strcmp(encoding, "utf8") == 0 || strcmp(encoding, "UTF8") == 0) {
         return CE_UTF8;
     }
 
@@ -187,10 +220,11 @@ static col_target_t parse_col_target(const char *x) {
     return COL_AUTO;
 }
 
+/* `col_types_names` is uppercased on the R side. */
 static col_target_t get_declared_col_target(
     SEXP col_types_values,
     SEXP col_types_names,
-    const char *field_name
+    const char *upper_name
 ) {
     if (TYPEOF(col_types_values) != STRSXP ||
         TYPEOF(col_types_names) != STRSXP ||
@@ -200,7 +234,7 @@ static col_target_t get_declared_col_target(
     }
 
     for (R_xlen_t i = 0; i < XLENGTH(col_types_names); i++) {
-        if (strcmp(CHAR(STRING_ELT(col_types_names, i)), field_name) == 0) {
+        if (strcmp(CHAR(STRING_ELT(col_types_names, i)), upper_name) == 0) {
             return parse_col_target(CHAR(STRING_ELT(col_types_values, i)));
         }
     }
@@ -208,24 +242,14 @@ static col_target_t get_declared_col_target(
     return COL_AUTO;
 }
 
-static void free_fields(field_info_t *fields, int n_fields) {
-    if (fields == NULL) {
-        return;
-    }
-    for (int i = 0; i < n_fields; i++) {
-        free(fields[i].name);
-    }
-    free(fields);
-}
-
+/* Scans the first `n_scan` records (deleted ones skipped).  Numeric text is
+   always whitespace-trimmed, independently of `trim_ws`. */
 static col_target_t infer_numeric_target(
     const field_info_t *field,
     const unsigned char *records_buf,
-    size_t records_len,
-    uint32_t n_records,
+    uint32_t n_scan,
     uint16_t record_len,
-    int field_offset,
-    int trim_ws
+    int field_offset
 ) {
     if (field->dec > 0) {
         return COL_DOUBLE;
@@ -235,20 +259,15 @@ static col_target_t infer_numeric_target(
         return COL_INTEGER;
     }
 
-    for (uint32_t r = 0; r < n_records; r++) {
+    for (uint32_t r = 0; r < n_scan; r++) {
         const unsigned char *rec = records_buf + ((size_t) r * (size_t) record_len);
-        if (((size_t) (r + 1) * (size_t) record_len) > records_len) {
-            break;
-        }
 
         if (rec[0] == '*') {
             continue;
         }
 
-        const unsigned char *field_ptr = rec + field_offset;
         char tmp[256];
-        int use_len = field->len < 255 ? field->len : 255;
-        copy_trimmed(tmp, field_ptr, use_len, trim_ws);
+        copy_trimmed(tmp, rec + field_offset, field->len, 1);
 
         if (tmp[0] == '\0') {
             continue;
@@ -258,12 +277,8 @@ static col_target_t infer_numeric_target(
             return COL_DOUBLE;
         }
 
-        char *endptr = NULL;
-        long val = strtol(tmp, &endptr, 10);
-        if (endptr == tmp || *endptr != '\0') {
-            return COL_DOUBLE;
-        }
-        if (val > INT_MAX || val < INT_MIN) {
+        int ival;
+        if (!parse_r_int(tmp, &ival)) {
             return COL_DOUBLE;
         }
     }
@@ -307,47 +322,70 @@ SEXP parse_dbf_parts(
         error("No DBF fields found.");
     }
 
+    /* Validate field lengths against the record length before any
+       allocation or data access. */
+    {
+        long sum_len = 1;
+        for (int i = 0; i < n_fields; i++) {
+            unsigned char flen = header_buf[32 + (i * 32) + 16];
+            if (flen == 0) {
+                error("Invalid DBF header: field %d has length 0.", i + 1);
+            }
+            sum_len += flen;
+        }
+        if (sum_len > (long) record_len) {
+            error(
+                "Invalid DBF header: field lengths (1 + %ld bytes) exceed the declared record length (%u bytes).",
+                sum_len - 1, (unsigned) record_len
+            );
+        }
+    }
+
     uint32_t available_records = (uint32_t) (records_len / (size_t) record_len);
     if (available_records < n_records) {
+        warning(
+            "DBF declares %u records but only %u are present; reading %u.",
+            (unsigned) n_records, (unsigned) available_records, (unsigned) available_records
+        );
         n_records = available_records;
     }
 
-    if (n_max < (double) n_records) {
-        n_records = (uint32_t) n_max;
+    /* Deleted records ('*' flag) are skipped; n_max counts live records.
+       n_scan is the number of raw records to scan, n_out the number of
+       live records that will be returned. */
+    uint32_t n_scan = 0;
+    uint32_t n_out = 0;
+    for (uint32_t r = 0; r < n_records; r++) {
+        if ((double) n_out >= n_max) {
+            break;
+        }
+        n_scan = r + 1;
+        if (records_buf[(size_t) r * (size_t) record_len] != '*') {
+            n_out++;
+        }
     }
 
-    field_info_t *fields = (field_info_t *) calloc((size_t) n_fields, sizeof(field_info_t));
-    if (fields == NULL) {
-        error("Memory allocation failure for DBF fields.");
-    }
+    field_info_t *fields = (field_info_t *) R_alloc((size_t) n_fields, sizeof(field_info_t));
 
     int kept = 0;
-    int running_offset = 1;
 
     for (int i = 0; i < n_fields; i++) {
         const unsigned char *fd = header_buf + 32 + (i * 32);
 
-        char raw_name[12];
-        memcpy(raw_name, fd, 11);
-        raw_name[11] = '\0';
-
         size_t k = 0;
-        while (k < 11 && raw_name[k] != '\0') {
+        while (k < 11 && fd[k] != '\0') {
             k++;
         }
 
-        fields[i].name = (char *) calloc(k + 1, 1);
-        if (fields[i].name == NULL) {
-            free_fields(fields, n_fields);
-            error("Memory allocation failure for field name.");
-        }
-
-        memcpy(fields[i].name, raw_name, k);
+        memcpy(fields[i].name, fd, k);
         fields[i].name[k] = '\0';
+        for (size_t j = 0; j <= k; j++) {
+            fields[i].upper_name[j] = (char) toupper((unsigned char) fields[i].name[j]);
+        }
         fields[i].type = (char) fd[11];
         fields[i].len = fd[16];
         fields[i].dec = fd[17];
-        fields[i].keep = match_select(select, fields[i].name);
+        fields[i].keep = match_select(select, fields[i].upper_name);
         fields[i].out_index = -1;
         fields[i].target = COL_AUTO;
 
@@ -355,11 +393,9 @@ SEXP parse_dbf_parts(
             fields[i].out_index = kept;
             kept++;
         }
-
-        running_offset += fields[i].len;
     }
 
-    running_offset = 1;
+    int running_offset = 1;
     for (int i = 0; i < n_fields; i++) {
         if (!fields[i].keep) {
             running_offset += fields[i].len;
@@ -369,7 +405,7 @@ SEXP parse_dbf_parts(
         col_target_t declared = get_declared_col_target(
             col_types_values,
             col_types_names,
-            fields[i].name
+            fields[i].upper_name
         );
 
         if (declared != COL_AUTO) {
@@ -387,11 +423,9 @@ SEXP parse_dbf_parts(
                 fields[i].target = infer_numeric_target(
                     &fields[i],
                     records_buf,
-                    records_len,
-                    n_records,
+                    n_scan,
                     record_len,
-                    running_offset,
-                    trim_ws
+                    running_offset
                 );
             } else {
                 fields[i].target = (fields[i].dec > 0) ? COL_DOUBLE : COL_INTEGER;
@@ -404,7 +438,7 @@ SEXP parse_dbf_parts(
     }
 
     if (verbose) {
-        Rprintf("DBF rows: %u\n", n_records);
+        Rprintf("DBF rows: %u\n", (unsigned) n_out);
         Rprintf("DBF fields: %d\n", n_fields);
         Rprintf("Selected fields: %d\n", kept);
     }
@@ -422,31 +456,31 @@ SEXP parse_dbf_parts(
         SEXP col = R_NilValue;
 
         if (fields[i].target == COL_INTEGER) {
-            col = PROTECT(allocVector(INTSXP, n_records));
-            for (uint32_t r = 0; r < n_records; r++) {
+            col = PROTECT(allocVector(INTSXP, n_out));
+            for (uint32_t r = 0; r < n_out; r++) {
                 INTEGER(col)[r] = NA_INTEGER;
             }
         } else if (fields[i].target == COL_DOUBLE) {
-            col = PROTECT(allocVector(REALSXP, n_records));
-            for (uint32_t r = 0; r < n_records; r++) {
+            col = PROTECT(allocVector(REALSXP, n_out));
+            for (uint32_t r = 0; r < n_out; r++) {
                 REAL(col)[r] = NA_REAL;
             }
         } else if (fields[i].target == COL_LOGICAL) {
-            col = PROTECT(allocVector(LGLSXP, n_records));
-            for (uint32_t r = 0; r < n_records; r++) {
+            col = PROTECT(allocVector(LGLSXP, n_out));
+            for (uint32_t r = 0; r < n_out; r++) {
                 LOGICAL(col)[r] = NA_LOGICAL;
             }
         } else if (fields[i].target == COL_DATE) {
-            col = PROTECT(allocVector(INTSXP, n_records));
-            for (uint32_t r = 0; r < n_records; r++) {
+            col = PROTECT(allocVector(INTSXP, n_out));
+            for (uint32_t r = 0; r < n_out; r++) {
                 INTEGER(col)[r] = NA_INTEGER;
             }
             SEXP cls = PROTECT(mkString("Date"));
             classgets(col, cls);
             UNPROTECT(1);
         } else {
-            col = PROTECT(allocVector(STRSXP, n_records));
-            for (uint32_t r = 0; r < n_records; r++) {
+            col = PROTECT(allocVector(STRSXP, n_out));
+            for (uint32_t r = 0; r < n_out; r++) {
                 SET_STRING_ELT(col, r, NA_STRING);
             }
         }
@@ -456,12 +490,9 @@ SEXP parse_dbf_parts(
         UNPROTECT(1);
     }
 
-    for (uint32_t r = 0; r < n_records; r++) {
+    uint32_t o = 0;
+    for (uint32_t r = 0; r < n_scan && o < n_out; r++) {
         const unsigned char *rec = records_buf + ((size_t) r * (size_t) record_len);
-
-        if (((size_t) (r + 1) * (size_t) record_len) > records_len) {
-            break;
-        }
 
         if (rec[0] == '*') {
             continue;
@@ -479,70 +510,67 @@ SEXP parse_dbf_parts(
             }
 
             SEXP col = VECTOR_ELT(out, fields[i].out_index);
+            /* flen is at most 255 (unsigned char), so tmp always fits. */
+            char tmp[256];
 
             if (fields[i].target == COL_INTEGER) {
-                char tmp[256];
-                int use_len = flen < 255 ? flen : 255;
-                copy_trimmed(tmp, field_ptr, use_len, trim_ws);
+                copy_trimmed(tmp, field_ptr, flen, 1);
 
-                if (tmp[0] != '\0') {
-                    char *endptr = NULL;
-                    long val = strtol(tmp, &endptr, 10);
-                    if (endptr != tmp && *endptr == '\0' && val <= INT_MAX && val >= INT_MIN) {
-                        INTEGER(col)[r] = (int) val;
-                    }
+                int ival;
+                if (tmp[0] != '\0' && parse_r_int(tmp, &ival)) {
+                    INTEGER(col)[o] = ival;
                 }
             } else if (fields[i].target == COL_DOUBLE) {
-                char tmp[256];
-                int use_len = flen < 255 ? flen : 255;
-                copy_trimmed(tmp, field_ptr, use_len, trim_ws);
+                copy_trimmed(tmp, field_ptr, flen, 1);
 
                 if (tmp[0] != '\0') {
                     char *endptr = NULL;
                     double val = strtod(tmp, &endptr);
                     if (endptr != tmp && *endptr == '\0') {
-                        REAL(col)[r] = val;
+                        REAL(col)[o] = val;
                     }
                 }
             } else if (fields[i].target == COL_LOGICAL) {
-                unsigned char ch = field_ptr[0];
-                if (ch == 'Y' || ch == 'y' || ch == 'T' || ch == 't') {
-                    LOGICAL(col)[r] = 1;
-                } else if (ch == 'N' || ch == 'n' || ch == 'F' || ch == 'f') {
-                    LOGICAL(col)[r] = 0;
+                int start, end;
+                trim_bounds(field_ptr, flen, 1, &start, &end);
+                if (end > start) {
+                    unsigned char ch = field_ptr[start];
+                    if (ch == 'Y' || ch == 'y' || ch == 'T' || ch == 't') {
+                        LOGICAL(col)[o] = 1;
+                    } else if (ch == 'N' || ch == 'n' || ch == 'F' || ch == 'f') {
+                        LOGICAL(col)[o] = 0;
+                    }
                 }
             } else if (fields[i].target == COL_DATE) {
                 if (fields[i].type == 'D') {
                     int start, end;
-                    trim_bounds(field_ptr, flen, 0, &start, &end);
+                    trim_bounds(field_ptr, flen, 1, &start, &end);
                     if ((end - start) >= 8) {
-                        INTEGER(col)[r] = parse_dbf_date_days_raw(field_ptr + start, end - start);
+                        INTEGER(col)[o] = parse_dbf_date_days_raw(field_ptr + start, end - start);
                     }
                 } else {
-                    char tmp[256];
-                    int use_len = flen < 255 ? flen : 255;
-                    copy_trimmed(tmp, field_ptr, use_len, trim_ws);
-                    INTEGER(col)[r] = parse_yyyymmdd_char_days(tmp);
+                    copy_trimmed(tmp, field_ptr, flen, 1);
+                    INTEGER(col)[o] = parse_yyyymmdd_char_days(tmp);
                 }
             } else {
-                char *tmp = (char *) R_alloc((size_t) flen + 1, sizeof(char));
                 copy_trimmed(tmp, field_ptr, flen, trim_ws);
-                SET_STRING_ELT(col, r, mkCharCE(tmp, encoding_ce));
+                SET_STRING_ELT(col, o, mkCharCE(tmp, encoding_ce));
             }
         }
+
+        o++;
     }
 
     setAttrib(out, R_NamesSymbol, out_names);
-    classgets(out, mkString("data.frame"));
+    SEXP df_cls = PROTECT(mkString("data.frame"));
+    classgets(out, df_cls);
 
     SEXP row_names = PROTECT(allocVector(INTSXP, 2));
     INTEGER(row_names)[0] = NA_INTEGER;
-    INTEGER(row_names)[1] = -(int) n_records;
+    INTEGER(row_names)[1] = -(int) n_out;
     setAttrib(out, R_RowNamesSymbol, row_names);
 
-    free_fields(fields, n_fields);
-
-    UNPROTECT(3);
+    UNPROTECT(4);
     return out;
 }
 

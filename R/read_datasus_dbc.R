@@ -8,12 +8,18 @@
 #'   uncompressed (DBF) formats are accepted.
 #' @param select Optional character vector of column names to keep. When
 #'   `NULL` (the default), all columns are returned. Names are matched
-#'   case-insensitively, so both `"UF_ZI"` and `"uf_zi"` work.
+#'   case-insensitively, so both `"UF_ZI"` and `"uf_zi"` work. Names that
+#'   match no column trigger a warning.
 #' @param n_max Maximum number of rows to read. Defaults to `Inf` (all rows).
+#'   Records flagged as deleted in the DBF are always skipped and do not
+#'   count towards `n_max`.
 #' @param trim_ws Logical. Trim leading/trailing whitespace from character
-#'   fields (default `TRUE`).
-#' @param encoding Encoding of the DBF character fields. Typically `"latin1"`
-#'   (the default for DATASUS files) or `"UTF-8"`.
+#'   fields (default `TRUE`). Numeric, date and logical fields are always
+#'   trimmed before parsing, regardless of this setting.
+#' @param encoding Encoding of the DBF character fields. One of `"latin1"`
+#'   (the default for DATASUS files; the aliases `"latin-1"` and
+#'   `"ISO-8859-1"` are accepted), `"UTF-8"` or `"unknown"` (native
+#'   encoding). Matching is case-insensitive; any other value is an error.
 #' @param guess_types Logical. Inspect numeric fields to distinguish
 #'   integer-like columns from double columns (default `TRUE`). Disable for
 #'   faster reads when precise types are not needed.
@@ -95,9 +101,10 @@ read_datasus_dbc <- function(
     cli::cli_abort("{.arg select} must be {.code NULL} or a character vector of column names.")
   }
 
-  if (!is.numeric(n_max) || length(n_max) != 1L || is.na(n_max) || n_max <= 0) {
-    cli::cli_abort("{.arg n_max} must be a single positive number.")
+  if (!is.numeric(n_max) || length(n_max) != 1L || is.na(n_max) || n_max < 1) {
+    cli::cli_abort("{.arg n_max} must be a single number greater than or equal to 1.")
   }
+  n_max <- floor(n_max)
 
   if (!is.logical(trim_ws) || length(trim_ws) != 1L || is.na(trim_ws)) {
     cli::cli_abort("{.arg trim_ws} must be {.code TRUE} or {.code FALSE}.")
@@ -106,6 +113,8 @@ read_datasus_dbc <- function(
   if (!is.character(encoding) || length(encoding) != 1L || is.na(encoding)) {
     cli::cli_abort("{.arg encoding} must be a single character string (e.g. {.val latin1}).")
   }
+
+  encoding <- normalize_dbf_encoding(encoding)
 
   if (!is.logical(guess_types) || length(guess_types) != 1L || is.na(guess_types)) {
     cli::cli_abort("{.arg guess_types} must be {.code TRUE} or {.code FALSE}.")
@@ -165,6 +174,15 @@ read_datasus_dbc <- function(
     PACKAGE = "datasusr"
   )
 
+  if (!is.null(select)) {
+    unmatched <- unique(select[!toupper(select) %in% toupper(names(out))])
+    if (length(unmatched) > 0L) {
+      cli::cli_warn(
+        "{length(unmatched)} name{?s} in {.arg select} matched no column: {.val {unmatched}}."
+      )
+    }
+  }
+
   out <- tibble::as_tibble(out, .name_repair = "unique")
 
   if (isTRUE(clean_names)) {
@@ -178,4 +196,28 @@ read_datasus_dbc <- function(
   }
 
   out
+}
+
+# Map user-supplied encoding names to the canonical values understood by the
+# C parser ("latin1", "UTF-8", "unknown"); error on anything else.
+normalize_dbf_encoding <- function(encoding) {
+  key <- tolower(encoding)
+  canonical <- switch(
+    key,
+    "latin1" = ,
+    "latin-1" = ,
+    "iso-8859-1" = ,
+    "iso8859-1" = "latin1",
+    "utf-8" = ,
+    "utf8" = "UTF-8",
+    "unknown" = "unknown",
+    NULL
+  )
+  if (is.null(canonical)) {
+    cli::cli_abort(c(
+      "Unsupported {.arg encoding}: {.val {encoding}}.",
+      "i" = "Use one of {.val latin1}, {.val UTF-8} or {.val unknown}."
+    ))
+  }
+  canonical
 }

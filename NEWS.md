@@ -1,3 +1,98 @@
+# datasusr 0.1.1
+
+Robustness release following a code audit of the compiled reader and of the
+download layer. No new dependencies.
+
+## Behaviour changes
+
+- Deleted DBF records (`*` flag) are dropped instead of returned as all-`NA`
+  rows.
+- The cache layout now includes the release period
+  (`<cache>/<source>/<file_type>/<period>/<file_name>`); existing caches
+  re-download once.
+- `timeout` in `datasus_download()` / `datasus_fetch()` defaults to `Inf`.
+- `datasus_download()` gains `success` and `error` columns; `datasus_fetch()`
+  gains `refresh` and `overwrite` arguments.
+- `encoding`, `year`, `month` and `uf` are validated and invalid values error.
+
+## DBC / DBF reader (compiled code)
+
+- **Malformed headers are rejected instead of read out of bounds.** The
+  declared field widths are now validated against the record length before
+  any data is touched (previously a corrupt file could make the parser read
+  past the end of its buffer).
+- **Deleted records (`*` flag) are dropped.** They used to come back as
+  all-`NA` rows. `n_max` now counts live records only.
+- **Much lower memory use on character-heavy files**: per-cell scratch
+  allocations were replaced by a single reusable buffer.
+- **No native memory is leaked on error**: the file and decompression buffers
+  are released through `R_UnwindProtect()` whenever an R error or interrupt
+  unwinds out of the reader.
+- Integer fields are parsed with overflow detection; values outside R's
+  integer range (including `-2147483648`, R's `NA` sentinel) are inferred as
+  `double` or returned as `NA` instead of a wrong number.
+- Numeric, logical and date fields are always trimmed before parsing;
+  `trim_ws` now only affects character output (with `trim_ws = FALSE`,
+  padded numbers used to become `NA`).
+- Invalid dates such as `20240231` are now `NA` instead of rolling over into
+  the next month.
+- `encoding` is validated: `"latin1"` (and the `latin-1` / `ISO-8859-1`
+  aliases), `"UTF-8"` and `"unknown"` are accepted; anything else errors
+  instead of being silently treated as Latin-1.
+- `select` and `col_types` names are matched case-insensitively against the
+  DBF field names, and `select` names that match no column raise a warning
+  instead of silently returning fewer columns.
+- A DBF whose data area is shorter than its header declares now reads the
+  available records with a warning; a truncated plain DBF no longer fails
+  with a misleading decompression error.
+- A very small DBC whose compressed payload is larger than its uncompressed
+  record area is no longer mistaken for a plain DBF (the record-flag bytes are
+  checked in addition to the file size).
+- `n_max` is floored to a whole number of rows.
+
+## Catalog, downloads and cache
+
+- **`SIM`/`DO` and `SINASC`/`DN` without `uf` now list all 27 UFs**
+  (previously zero files were returned).
+- **Cache layout now includes the period**:
+  `<cache>/<source>/<file_type>/<period>/<file_name>`. Final and preliminary
+  releases of the same file (e.g. `DOPE2022.dbc`) used to share one path,
+  which made `datasus_download()` fail with "Duplicate destfiles" or served a
+  stale preliminary file forever. Existing caches will re-download once.
+- **Failed or interrupted downloads no longer poison the cache**: files are
+  downloaded to a `.part` name and renamed only on success; partial files
+  are removed. `datasus_download()` gains `success` and `error` columns and
+  `downloaded` reflects the real outcome. `datasus_fetch()` skips failed
+  files with a warning and errors if every download failed.
+- **`datasus_fetch()` prefers final over preliminary data**: when the same
+  file (matched case-insensitively, and treating `SINAN_P` / `ESUSNOTIFICA_P`
+  as preliminary aliases of `SINAN` / `ESUSNOTIFICA`) is available in both
+  trees only the final copy is read, so rows are not duplicated. A final
+  candidate that could not be confirmed on the FTP does not suppress a
+  preliminary copy known to exist. `datasus_fetch()` also gains `refresh` and `overwrite`
+  arguments (the vignette documented `refresh` but it was not accepted).
+- **`timeout` no longer caps the whole transfer.** It used to be passed to
+  libcurl as the total time allowed per file (240 s), which aborted large
+  files on the slow DATASUS FTP. It now defaults to `Inf`; stalled transfers
+  are detected with a connect timeout and a low-speed limit instead.
+- FTP listing failures are reported with a warning and the affected files
+  keep `exists = NA`, instead of being silently reported as absent.
+- `datasus_build_path()` no longer recycles a vector `year` against the
+  SINASC path templates (which produced a warning and wrong paths).
+- `SINAN_P` was advertised in `datasus_sources()` but had no file types and
+  could never be fetched; its file types are now registered.
+- `year`, `month` and `uf` are validated before any network access.
+- File names are matched against the FTP listing case-insensitively, keeping
+  the server's spelling in the download URL.
+- `datasus_download(use_cache = FALSE)` without `dest_dir` writes to a fresh
+  subdirectory of `tempdir()` instead of the working directory, and
+  `overwrite = FALSE` is honoured in that mode.
+- `datasus_get_territory()` copes with upper-case member names inside the
+  territorial ZIP.
+- New offline test suite (`tests/testthat`) covering the DBF parser with
+  synthetic files and the catalog / cache / download logic with `file://`
+  URLs.
+
 # datasusr 0.1.0
 
 ## CRAN review fixes
@@ -35,8 +130,9 @@
 
 ## Bug fixes
 
-- **Fixed SIM path templates**: `DOEXT`, `DOINF`, and `DOMAT` previously
-  pointed to the `DOFET` FTP directory. Each now has its own correct path.
+- **SIM path templates**: `DOEXT`, `DOINF`, and `DOMAT` are served from the
+  same `DOFET` FTP directory as `DOFET` (verified against the live FTP); the
+  templates register that directory for each of them.
 - **Fixed column/argument name shadowing** in `datasus_build_path()`,
   `datasus_file_types()`, and `datasus_list_files()`. Column names like
   `source` and `file_type` no longer clash with function arguments thanks
