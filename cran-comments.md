@@ -1,36 +1,48 @@
-## Update: datasusr 0.1.1
+## Update: datasusr 0.2.0
 
-This is a maintenance release of a package first published on CRAN as
-0.1.0 (all CRAN check flavours OK). It follows an internal code audit
-of the compiled DBC/DBF reader and of the download layer; see
-`NEWS.md` for the full list.
+This release replaces the C reader of DBC/DBF files with the Rust crate
+'datasus-core', written by the package authors and shared with a
+command-line tool and a Python package. The R interface is unchanged; see
+`NEWS.md`. The package therefore now has
+`SystemRequirements: Cargo (Rust's package manager), rustc >= 1.81`.
 
-* Malformed DBF headers are now rejected instead of read out of bounds
-  (verified with AddressSanitizer); native buffers are released via
-  `R_UnwindProtect()` on error; deleted records are dropped; integer
-  overflow, invalid dates and unsupported encodings are handled.
-* Failed or interrupted downloads no longer poison the cache, and the
-  cache layout keys files by release period so final and preliminary
-  releases of the same file no longer collide.
-* An offline `testthat` suite was added. It builds synthetic DBF files
-  in `tempdir()` and exercises the download code with `file://` URLs,
-  so no test needs network access. Network-dependent examples remain in
-  `\donttest{}` and are guarded with `tryCatch()`.
+## Rust
+
+The compiled code is Rust called through a small C file (`src/datasusr.c`)
+that uses the R API; the Rust code itself does not call R.
+
+* The source of the only Rust crate the package depends on is bundled in
+  `src/rust/vendor.tar.xz`, and the build runs `cargo build --offline`:
+  nothing is downloaded.
+* `cargo build` runs with `-j 2`, and CARGO_HOME is a temporary directory
+  inside the build tree, removed at the end.
+* The versions of cargo and rustc are reported before compilation
+  (`tools/msrv.R`), and `SystemRequirements` states the minimum rustc (1.81).
+* Authors and licenses of the bundled crate are in `inst/AUTHORS`. Its
+  decompressor is a port of `blast.c` from zlib contrib/blast; Mark Adler
+  remains listed in `Authors@R` as contributor and copyright holder, and the
+  zlib notice is kept in the ported file (`LICENSE.note`).
+
+The build scaffolding (configure, Makevars, vendoring) is the one used by
+our package 'foresightr', currently on CRAN.
+
+## Test environments
+
+* local: macOS 26.7 (aarch64), R 4.6.0, rustc 1.100.0
+* rustc 1.81.0 (the oldest version the package declares): the bundled crate
+  builds offline
+* TODO before submission: win-builder (R-devel) and GitHub Actions
+  (macOS, Windows, Ubuntu release and devel)
 
 ## R CMD check results
 
-Local `R CMD check --as-cran` (including `--run-donttest`) on R 4.6.0 /
-macOS arm64 (Apple clang 21), with network access:
+Local `R CMD check --as-cran --run-donttest`, with network access:
 
 0 errors | 0 warnings | 0 notes
 
 Locally the only NOTE is "Skipping checking HTML validation" because the
-macOS system HTML Tidy is too old; in a sandbox without network access two
-further environment-specific NOTEs appear ("unable to verify current
-time" and an `xcrun_db` file created by Apple's toolchain in the temp
-directory). None is intrinsic to the package. The compiled code builds cleanly
-with `-Wall -Wextra -pedantic` and the parser was additionally
-exercised under AddressSanitizer with malformed input.
+macOS system HTML Tidy is too old.
 
-Known limitation: on Windows the reader uses `ftell()` and cannot read
-files larger than 2 GB; no DATASUS DBC file approaches that size.
+The test suite is offline: it builds synthetic DBF files in `tempdir()` and
+exercises the download code with `file://` URLs. Network-dependent examples
+remain in `\donttest{}` and are guarded with `tryCatch()`.
