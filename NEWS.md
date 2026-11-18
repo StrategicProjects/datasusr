@@ -1,7 +1,7 @@
 # datasusr 0.2.0
 
 The compiled reader is now the Rust crate
-[`datasus-core`](https://crates.io/crates/datasus-core), the same code behind
+[`datasus-core`](https://github.com/StrategicProjects/datasus-rs), the same code behind
 the `datasus` command-line tool and the Python package `datasuspy`. The R
 interface is unchanged.
 

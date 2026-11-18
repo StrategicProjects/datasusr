@@ -31,8 +31,10 @@ our package 'foresightr', currently on CRAN.
 * local: macOS 26.7 (aarch64), R 4.6.0, rustc 1.100.0
 * rustc 1.81.0 (the oldest version the package declares): the bundled crate
   builds offline
-* TODO before submission: win-builder (R-devel) and GitHub Actions
-  (macOS, Windows, Ubuntu release and devel)
+* GitHub Actions, R CMD check, Status OK on all four: macOS (R 4.6.2),
+  Windows Server 2022 (R 4.6.2), Ubuntu 26.04 (R 4.6.2 and R-devel)
+* win-builder, R-devel (2026-11-17 r90926), rustc 1.92.0: installs offline
+  from the bundled crate and checks with no issue in the package
 
 ## R CMD check results
 
