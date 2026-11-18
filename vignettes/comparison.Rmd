@@ -55,7 +55,7 @@ and a select set of SINAN diseases, in a workflow you already know.
 | **Survey microdata** (VIGITEL, PNS, PNAD-C, POF, Censo) | No | Yes | No |
 | **Regulatory data** (ANS, ANVISA) | No | Yes | No |
 | **Primary-care indicators** (SISAB) | No | Yes | No |
-| **DBC reading** | In-memory C parser (bundled `blast`) | Vendored C decompressor | External `read.dbc` |
+| **DBC reading** | In-memory Rust parser (bundled port of `blast`) | Vendored C decompressor | External `read.dbc` |
 | **Module-specific API** | No (one generic `datasus_fetch()`) | Yes (`sim_data()`, `sih_data()`, …) | Yes (`fetch_datasus(information_system = "SIH-RD")`) |
 | **Variable dictionaries / labels** | No (raw fields) | Yes (`*_variables()`, `*_dictionary()`) | Yes (`process_*()` family) |
 | **Filter by ICD-10 prefix** | No (post-hoc with `dplyr`) | Yes (`cause = "I"`, `diagnosis = "J"`) | No |
@@ -66,14 +66,16 @@ and a select set of SINAN diseases, in a workflow you already know.
 | **Type control at read** | Yes (`col_types`, `guess_types`) | No | No |
 | **Date parsing at read** | Yes (`parse_dates`) | Module-dependent | Via `process_*()` |
 | **Return type** | Tibble, snake_case by default | Tibble, snake_case | Data frame → tibble after `process_*()` |
-| **CRAN status** | This submission | On CRAN | Archived |
+| **CRAN status** | On CRAN | On CRAN | Archived |
 | **Dependencies** | cli, curl, dplyr, purrr, rlang, stringr, tibble, tidyr | + readr, jsonlite, foreign (Imports); arrow, furrr, future, survey, srvyr (Suggests) | foreign, read.dbc (archived) |
 | **License** | MIT | MIT | MIT |
 
 ## Reading DBC files
 
 All three packages ultimately rely on Mark Adler's `blast` decompressor
-for the PKWare DCL format used by DATASUS. The differences are in *how*
+for the PKWare DCL format used by DATASUS (`datasusr` on a Rust port of
+it, shared with the `datasus` command-line tool and the Python package
+`datasuspy`). The differences are in *how*
 the decompressed data is materialised in R:
 
 - **`microdatasus`** delegates to the `read.dbc` package, which writes a
@@ -83,10 +85,10 @@ the decompressed data is materialised in R:
   tidy tibbles per module. Each `<module>_data()` call applies the
   module's specific cleaning/labelling rules.
 - **`datasusr`** decompresses and parses entirely in memory in a single
-  C call. The compressed payload goes straight to a memory buffer and is
+  call to compiled code. The compressed payload goes straight to a memory buffer and is
   parsed field-by-field into pre-allocated R vectors, with optional
   column selection, integer-vs-double inference, explicit `col_types`,
-  and date parsing — all at the C level. There are no temporary files
+  and date parsing — all in compiled code. There are no temporary files
   on disk.
 
 For a single large DBC file with column selection, `datasusr` is the

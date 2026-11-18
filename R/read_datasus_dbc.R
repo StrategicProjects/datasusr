@@ -1,7 +1,7 @@
 #' Read DATASUS DBC files
 #'
-#' Reads a DATASUS `.dbc` file directly into R using native C code for
-#' PKWare DCL decompression and DBF parsing. The function always returns a
+#' Reads a DATASUS `.dbc` file directly into R using compiled code (the Rust
+#' crate 'datasus-core') for PKWare DCL decompression and DBF parsing. The function always returns a
 #' tibble and is designed to work well with the tidyverse.
 #'
 #' @param file Path to a `.dbc` or `.dbf` file. Both compressed (DBC) and
@@ -13,7 +13,7 @@
 #' @param n_max Maximum number of rows to read. Defaults to `Inf` (all rows).
 #'   Records flagged as deleted in the DBF are always skipped and do not
 #'   count towards `n_max`.
-#' @param trim_ws Logical. Trim leading/trailing whitespace from character
+#' @param trim_ws Logical. Trim leading/trailing ASCII whitespace from character
 #'   fields (default `TRUE`). Numeric, date and logical fields are always
 #'   trimmed before parsing, regardless of this setting.
 #' @param encoding Encoding of the DBF character fields. One of `"latin1"`

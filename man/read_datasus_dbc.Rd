@@ -30,7 +30,7 @@ match no column trigger a warning.}
 Records flagged as deleted in the DBF are always skipped and do not
 count towards \code{n_max}.}
 
-\item{trim_ws}{Logical. Trim leading/trailing whitespace from character
+\item{trim_ws}{Logical. Trim leading/trailing ASCII whitespace from character
 fields (default \code{TRUE}). Numeric, date and logical fields are always
 trimmed before parsing, regardless of this setting.}
 
@@ -62,8 +62,8 @@ DATASUS names are uppercase (e.g. \code{UF_ZI} becomes \code{uf_zi}).}
 A tibble.
 }
 \description{
-Reads a DATASUS \code{.dbc} file directly into R using native C code for
-PKWare DCL decompression and DBF parsing. The function always returns a
+Reads a DATASUS \code{.dbc} file directly into R using compiled code (the Rust
+crate 'datasus-core') for PKWare DCL decompression and DBF parsing. The function always returns a
 tibble and is designed to work well with the tidyverse.
 }
 \examples{

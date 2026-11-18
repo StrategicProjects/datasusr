@@ -1,7 +1,7 @@
 Package: datasusr
 Type: Package
 Title: Fast Access to Brazilian Public Health Data from 'DATASUS'
-Version: 0.1.1
+Version: 0.2.0
 Authors@R: c(
     person("André", "Leite", email = "leite@castlab.org", role = c("aut", "cre"),
            comment = c(ORCID = "0000-0002-4718-9766")),
@@ -16,13 +16,15 @@ Authors@R: c(
     person("Júlia", "Nascimento Barreto", email = "juliabarreto@gd.seplag.pe.gov.br", role = "aut",
            comment = c(ORCID = "0009-0004-2851-7770")),
     person("Mark", "Adler", role = c("ctb", "cph"),
-           comment = "Author of bundled blast.c and blast.h from zlib contrib/blast"))
-Description: Provides fast, in-memory reading of 'DATASUS' 'DBC' files using
-    native 'C' code, along with a catalog of public health data sources,
-    'FTP' file discovery, caching downloads, and a high-level datasus_fetch()
-    function that lists, downloads, and reads files in a single call. Bundles
-    the 'blast' decompressor from 'zlib' contrib/blast to decode 'PKWare DCL'
-    compressed 'DBC' files and parses 'DBF' records directly for efficient
+           comment = "Author of blast.c from zlib contrib/blast, which the bundled
+               Rust decompressor is a port of"))
+Description: Provides fast, in-memory reading of 'DATASUS' 'DBC' files, along
+    with a catalog of public health data sources, 'FTP' file discovery,
+    caching downloads, and a high-level datasus_fetch() function that lists,
+    downloads, and reads files in a single call. The reader is the 'Rust'
+    crate 'datasus-core', bundled with the package: it decodes 'PKWare DCL'
+    compressed 'DBC' files with a port of the 'blast' decompressor from
+    'zlib' contrib/blast and parses 'DBF' records directly for efficient
     import into tibbles. See the 'DATASUS' file transfer site
     <https://datasus.saude.gov.br> and Adler (2003)
     <https://github.com/madler/zlib/tree/master/contrib/blast> for details on
@@ -41,14 +43,5 @@ VignetteBuilder: knitr
 Config/testthat/edition: 3
 Roxygen: list(markdown = TRUE)
 NeedsCompilation: yes
-SystemRequirements: C99
+SystemRequirements: Cargo (Rust's package manager), rustc >= 1.81
 Config/roxygen2/version: 8.0.0
-Packaged: 2026-09-25 18:04:07 UTC; leite
-Author: André Leite [aut, cre] (ORCID: <https://orcid.org/0000-0002-4718-9766>),
-  Marcos Wasiliew [aut] (ORCID: <https://orcid.org/0009-0004-4694-3159>),
-  Hugo Vasconcelos [aut] (ORCID: <https://orcid.org/0000-0001-6249-0920>),
-  Carlos Amorim [aut] (ORCID: <https://orcid.org/0000-0001-6315-8305>),
-  Diogo Bezerra [aut] (ORCID: <https://orcid.org/0000-0002-1216-8674>),
-  Mark Adler [ctb, cph] (Author of bundled blast.c and blast.h from zlib
-    contrib/blast)
-Maintainer: André Leite <leite@castlab.org>

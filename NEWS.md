@@ -1,3 +1,32 @@
+# datasusr 0.2.0
+
+The compiled reader is now the Rust crate
+[`datasus-core`](https://github.com/StrategicProjects/datasus-rs), the same code behind
+the `datasus` command-line tool and the Python package `datasuspy`. The R
+interface is unchanged.
+
+## Installation from source
+
+- Building the package from source now needs `cargo` and `rustc` (>= 1.81);
+  see <https://rust-lang.org/tools/install/>. CRAN binaries for Windows and
+  macOS need nothing extra. The crate sources are bundled, so nothing is
+  downloaded during installation.
+
+## Reader
+
+- **Faster.** Reading a whole file takes 1.5 to 1.9 times less time than in
+  0.1.1 on real DATASUS files (for example, 5 million rows by 60 columns went
+  from 17.0 s to 8.7 s on an Apple M-series laptop). Character columns are
+  built from the distinct values of each batch of rows, which is where files
+  with many repeated codes gain the most. Peak memory is unchanged.
+- **`trim_ws` no longer depends on the platform.** Only the six ASCII
+  whitespace characters are trimmed. The previous reader used the C function
+  `isspace()`, which on macOS in a UTF-8 locale also removed the byte `0xA0`
+  (a non-breaking space in Latin-1), while on Linux it did not. Values ending
+  in a non-breaking space now keep it everywhere.
+- Decompression stops with an error if a file would expand beyond 4 GiB, as a
+  guard against corrupt or crafted input.
+
 # datasusr 0.1.1
 
 Robustness release following a code audit of the compiled reader and of the
